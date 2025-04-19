@@ -73,7 +73,6 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $user = User::find($request->user()->id);
-        $user->is_verified = 0;
         $user->save();
         $request->user()->tokens()->delete();
     }
