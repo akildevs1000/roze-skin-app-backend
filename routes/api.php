@@ -10,6 +10,7 @@ use App\Http\Controllers\DeliveryServiceController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\PaymentModeController;
 use App\Http\Controllers\ProductController;
@@ -34,6 +35,9 @@ Route::get('product-list', [ProductController::class, "dropDown"]);
 
 Route::apiResource('business-sources', BusinessSourceController::class);
 Route::get('business-source-list', [BusinessSourceController::class, "dropDown"]);
+
+Route::apiResource('payments', PaymentController::class);
+Route::get('payment-list', [PaymentController::class, "dropDown"]);
 
 Route::apiResource('payment-modes', PaymentModeController::class);
 Route::get('payment-mode-list', [PaymentModeController::class, "dropDown"]);

@@ -18,13 +18,9 @@ class InvoiceController extends Controller
     {
         $search = trim(request('search'));
 
-
         $status = request('status');
 
-        $business_source_id = request('business_source_id');
-        $delivery_service_id = request('delivery_service_id');
-        $payment_method = request('payment_method');
-
+        $customer_id = request('customer_id');
 
         $from = request('from') ? request('from') . " 00:00:00" : date("Y-m-d 00:00:00");
         $to = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
@@ -37,10 +33,22 @@ class InvoiceController extends Controller
             'customer' => function ($q) {
                 $q->with(['shipping_address', 'billing_address']);
             },
+            'payments' => function ($q) {
+                $q->with(['payment_mode']);
+            },
             'order',
             'business_source',
             'delivery_service'
         ])
+            ->when($customer_id, function ($q) use ($customer_id) {
+                $q->where('customer_id', $customer_id);
+            })
+            ->when(count($dates) > 0, function ($q) use ($dates) {
+                $q->whereBetween('created_at', $dates);
+            })
+            ->when($status, function ($q) use ($status) {
+                $q->where('status', $status);
+            })
             ->when($search, function ($q) use ($search) {
 
                 $order_id = Order::where("order_id", $search)->value("id");
@@ -48,14 +56,15 @@ class InvoiceController extends Controller
                 if ($order_id) {
                     $q->where('order_id', $order_id);
                 } else {
-                    $q->where('id', $search)
+                    // check it value is less then 1000 and remove all the zeros
+                    $q->where('id', env("WILD_CARD") ?? 'ILIKE', '%' . ltrim($search, '0') . '%')
                         ->orWhereHas('order', function ($q2) use ($search) {
                             $q2->where('tracking_number', $search);
                         });
                 }
             })
             ->orderByDesc('id')
-            ->paginate(request('per_page'));
+            ->paginate($perPage);
     }
 
     public function store(ValidationRequest $request)

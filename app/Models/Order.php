@@ -18,6 +18,7 @@ class Order extends Model
         "order_date",
         "order_status",
         "currency",
+        "shipping_charges",
         "total",
         "payment_method",
         "payment_method_title",
@@ -66,10 +67,20 @@ class Order extends Model
             );
     }
 
-    protected $appends = ['date_time'];
+    protected $appends = ['date_time', 'total_paid_amount'];
 
     public function getDateTimeAttribute()
     {
         return date("d-M-y h:i:sa", strtotime($this->order_date));
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function getTotalPaidAmountAttribute()
+    {
+        return $this->payments->sum('paid_amount');
     }
 }

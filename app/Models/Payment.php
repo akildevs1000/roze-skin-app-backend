@@ -11,37 +11,36 @@ class Payment extends Model
     use HasFactory;
 
     protected $guarded = [];
-    protected $with    = ['paymentMode'];
 
-    protected $appends = ['time'];
+    protected $appends = ['date_time', 'payment_reference_id'];
 
-    protected $casts = [
-        // 'created_at' => 'datetime:d-M-y',
-    ];
-
-    public function paymentMode()
+    public function getPaymentReferenceIdAttribute()
     {
-        return $this->belongsTo(PaymentMode::class, 'payment_mode', 'id');
+        return "P-" . str_pad($this->id, 6, '0', STR_PAD_LEFT);
     }
 
-    public function payment_type()
+    public function getDateTimeAttribute()
     {
-        return $this->belongsTo(PaymentMode::class, 'payment_mode', 'id');
+        return date("d-M-y h:i:sa", strtotime($this->created_at));
     }
 
-    public function getTimeAttribute()
+    public function payment_mode()
     {
-        return date('H:i', strtotime($this->created_at));
+        return $this->belongsTo(PaymentMode::class);
     }
 
-    /**
-     * Get the booking that owns the Payment
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function booking()
+    public function invoice()
     {
-        return $this->belongsTo(Booking::class)
-            ->withSum('transactions', 'debit');
+        return $this->belongsTo(Invoice::class);
+    }
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
     }
 }

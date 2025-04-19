@@ -35,6 +35,16 @@ class Invoice extends Model
         return $this->belongsTo(BusinessSource::class);
     }
 
+    /**
+     * Get all of the comments for the Invoice
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
     protected $appends = ['date_time', 'invoice_reference_id'];
 
     public function getInvoiceReferenceIdAttribute()
