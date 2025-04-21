@@ -32,6 +32,8 @@ Route::post('/check_otp/{otp}', [AuthController::class, 'checkOTP']);
 
 Route::apiResource('products', ProductController::class);
 Route::get('product-list', [ProductController::class, "dropDown"]);
+Route::post('products-update', [ProductController::class, "updateProduct"]);
+
 
 Route::apiResource('business-sources', BusinessSourceController::class);
 Route::get('business-source-list', [BusinessSourceController::class, "dropDown"]);

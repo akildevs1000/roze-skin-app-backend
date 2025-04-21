@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\URL;
 
 class Product extends Model
 {
@@ -21,10 +22,24 @@ class Product extends Model
         return $this->belongsTo(ProductCategory::class);
     }
 
-    protected $appends = ['product_with_item_name'];
+    protected $appends = ['date_time', 'product_with_item_name','display_image'];
 
     public function getProductWithItemNameAttribute()
     {
         return $this->description . " " . "({$this->item_number})";
+    }
+
+    public function getDisplayImageAttribute()
+    {
+        if (!$this->image) {
+            return null;
+        }
+
+        return URL::to($this->image); // returns full URL like http://yourdomain.com/products/filename.webp
+    }
+
+    public function getDateTimeAttribute()
+    {
+        return date("d-M-y h:i:sa", strtotime($this->created_at));
     }
 }

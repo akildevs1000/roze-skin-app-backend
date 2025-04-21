@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
@@ -24,14 +26,6 @@ class ProductController extends Controller
             ->paginate(request("per_page"));
     }
 
-
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -41,42 +35,66 @@ class ProductController extends Controller
             "product_category_id" => "required",
             "item_number" => "required|min:5|max:100",
             "qty" => "required|numeric|min:1|max:1000",
+            "image" => "nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048",
+            "purchase_price" => "required"
         ]);
 
-        return Product::create($validated);
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $filename = time() . '_' . Str::slug(pathinfo($image->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $image->getClientOriginalExtension();
+
+            $image->move(public_path('products'), $filename); // Save in public/products
+            $validated['image'] = 'products/' . $filename;
+        }
+
+        $product = Product::create($validated);
+
+        return $product;
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Product  $Product
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, Product $Product)
+    public function updateProduct(Request $request)
     {
         $validated = $request->validate([
+            "id" => "required|exists:products,id",
             "name" => "required|min:5|max:255",
             "description" => "required|min:5|max:255",
             "price" => "numeric|required",
             "product_category_id" => "required",
-            "item_number" => "required|min:1|max:100",
+            "item_number" => "required|min:5|max:100",
             "qty" => "required|numeric|min:1|max:1000",
+            "image" => "nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048",
+            "purchase_price" => "required"
         ]);
 
-        return $Product->update($validated);
+        $product = Product::findOrFail($request->id);
+
+        if ($request->hasFile('image')) {
+            // Delete old image if it exists
+            if ($product->image && File::exists(public_path($product->image))) {
+                File::delete(public_path($product->image));
+            }
+
+            // Save new image
+            $image = $request->file('image');
+            $filename = time() . '_' . Str::slug(pathinfo($image->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $image->getClientOriginalExtension();
+            $image->move(public_path('products'), $filename);
+            $validated['image'] = 'products/' . $filename;
+        }
+
+        $product->update($validated);
+
+        return $product->fresh();
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Product  $Product
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Product $Product)
+    public function destroy(Product $product)
     {
-        $Product->delete();
+        // Delete the image file if it exists
+        if ($product->image && File::exists(public_path($product->image))) {
+            File::delete(public_path($product->image));
+        }
 
-        return response()->json();
+        $product->delete();
+
+        return response()->noContent();
     }
 }
