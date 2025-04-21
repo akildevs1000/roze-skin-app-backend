@@ -19,6 +19,8 @@ class OrderController extends Controller
         $search = trim(request('search'));
         $status = request('status');
 
+        $customer_id = request('customer_id');
+
         $business_source_id = request('business_source_id');
         $delivery_service_id = request('delivery_service_id');
         $payment_method = request('payment_method');
@@ -41,6 +43,10 @@ class OrderController extends Controller
             })
             ->when(count($dates) > 0, function ($q) use ($dates) {
                 $q->whereBetween('order_date', $dates);
+            })
+           
+            ->when($customer_id, function ($q) use ($customer_id) {
+                $q->where('customer_id', $customer_id);
             })
 
             ->when($business_source_id, function ($q) use ($business_source_id) {
