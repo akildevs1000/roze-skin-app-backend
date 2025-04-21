@@ -21,6 +21,8 @@ class InvoiceController extends Controller
         $status = request('status');
 
         $customer_id = request('customer_id');
+        
+        $delivery_service_id = request('delivery_service_id');
 
         $from = request('from') ? request('from') . " 00:00:00" : date("Y-m-d 00:00:00");
         $to = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
@@ -40,6 +42,9 @@ class InvoiceController extends Controller
             'business_source',
             'delivery_service'
         ])
+            ->when($delivery_service_id, function ($q) use ($delivery_service_id) {
+                $q->where('delivery_service_id', $delivery_service_id);
+            })
             ->when($customer_id, function ($q) use ($customer_id) {
                 $q->where('customer_id', $customer_id);
             })
@@ -93,7 +98,7 @@ class InvoiceController extends Controller
             'delivery_service_id' => 'required|integer|exists:delivery_services,id',
             'tracking_number' => 'nullable|max:255',
             'payment_method' => 'required|string|max:100',
-            'payment_method_title' => 'required|string|max:255',
+            'payment_method_title' => 'nullable|string|max:255',
             'paid_amount' => 'required|numeric|min:0',
             'order_id' => 'required',
             'status' => 'required'

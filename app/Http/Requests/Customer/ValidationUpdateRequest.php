@@ -26,8 +26,9 @@ class ValidationUpdateRequest extends FormRequest
         return [
             "first_name" => "required|max:255",
             "last_name" => "required|max:255",
-            "email" => "nullable",
-            "phone" => "nullable",
+            "customer.email" => "nullable|email|max:255",
+            "customer.phone" => "required|string|regex:/^\+?[0-9]{7,15}$/",
+            "customer.whatsapp" => "nullable|string|regex:/^\+?[0-9]{7,15}$/",
 
             "shipping_address.address_1" => "nullable|max:255",
             "shipping_address.address_2" => "nullable|max:255",

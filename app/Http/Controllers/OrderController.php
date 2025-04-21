@@ -37,7 +37,7 @@ class OrderController extends Controller
                     ->orWhere('tracking_number', $search);
             })
             ->when($status, function ($q) use ($status) {
-                $q->where('order_status', $status);
+                $q->whereHas("invoice", fn($q) => $q->where('status', $status));
             })
             ->when(count($dates) > 0, function ($q) use ($dates) {
                 $q->whereBetween('order_date', $dates);

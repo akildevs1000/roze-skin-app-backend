@@ -125,8 +125,7 @@
                 <td>
                     <div>
                         <div class="image-box">
-                            <img class="w-100" src="https://amc.mytime2cloud.com/mail-logo.png"
-                                alt="Akil Security & Alarm Systems LLC" />
+                            <img class="w-100" src="https://amc.mytime2cloud.com/mail-logo.png" alt="Roze Skincare" />
                         </div>
                     </div>
                 </td>
@@ -141,17 +140,17 @@
             <tr>
                 <td>
                     <div class="company-details">
-                        <div class="sub-heading">Akil Security & Alarm Systems LLC</div>
+                        <div class="sub-heading">Roze Skincare LLC</div>
                         <div>
-                            <small>P.O.Box : 83481, Dubai, United Arab Emirates</small>
+                            <small>P.O.Box : 66636, Dubai, United Arab Emirates</small>
                         </div>
-                        <div><small>+971 4 3939 562 / +971 55 330 3991</small></div>
-                        <div><small>mail@akilgroup.com, www.akilgroup.com</small></div>
+                        <div><small>+971 55 125 6576</small></div>
+                        <div><small>rozeskincaredubai@gmail.com </small></div>
                         <div><small>TRN : 100391417100003</small></div>
                     </div>
                 </td>
                 <td>
-                    <div class="company-details text-rights" style="float:right;clear: both;" >
+                    <div class="company-details text-rights" style="float:right;clear: both;">
                         Bill to <div class="sub-heading">{{ $vendor->title }} {{ $vendor->vendor_display_name }}</div>
                         <div><small>{{ $vendor->work_phone }} / {{ $vendor->mobile }}</small></div>
                         <div><small>{{ $vendor->email }}</small></div>
@@ -184,19 +183,21 @@
                     <td colspan="2">Payment Mode: {{ $payment->payment_mode }}</td>
                     <td>Ref# {{ $payment->payment_mode_ref }}</td>
                 </tr>
-              
+
                 <tr>
                     <td colspan="3">The Sum of: {{ $expense->total }}</td>
                 </tr>
                 <tr>
                     <td colspan="2" style="padding-bottom: 40px">Paid For:
 
-                            <br>
-                            @foreach ($items as $item)
-                                <ul>
-                                    <li>{{($item->detail)}} <br> <small style="font-size: 9px"> Rate: {{$item->rate}} x Qty {{$item->qty}} = Amount {{$item->amount}}</small></li>
-                                </ul>
-                            @endforeach
+                        <br>
+                        @foreach ($items as $item)
+                            <ul>
+                                <li>{{ $item->detail }} <br> <small style="font-size: 9px"> Rate:
+                                        {{ $item->rate }} x Qty {{ $item->qty }} = Amount
+                                        {{ $item->amount }}</small></li>
+                            </ul>
+                        @endforeach
 
                     </td>
                     <td style="padding-bottom: 40px">Payee: {{ $payment->payee }}</td>
@@ -221,7 +222,7 @@
                     <div>
                         <div class="image-box">
                             <img class="w-100" src="https://amc.mytime2cloud.com/mail-logo.png"
-                                alt="Akil Security & Alarm Systems LLC" />
+                                alt="Roze Skincare LLC" />
                         </div>
                     </div>
                 </td>
@@ -236,17 +237,17 @@
             <tr>
                 <td>
                     <div class="company-details">
-                        <div class="sub-heading">Akil Security & Alarm Systems LLC</div>
+                        <div class="sub-heading">Roze Skincare LLC</div>
                         <div>
                             <small>P.O.Box : 83481, Dubai, United Arab Emirates</small>
                         </div>
                         <div><small>+971 4 3939 562 / +971 55 330 3991</small></div>
-                        <div><small>mail@akilgroup.com, www.akilgroup.com</small></div>
+                        <div><small>rozeskincaredubai@gmail.com</small></div>
                         <div><small>TRN : 100391417100003</small></div>
                     </div>
                 </td>
                 <td>
-                    <div class="company-details text-rights" style="float:right;clear: both;" >
+                    <div class="company-details text-rights" style="float:right;clear: both;">
                         Bill to <div class="sub-heading">{{ $vendor->title }} {{ $vendor->vendor_display_name }}</div>
                         <div><small>{{ $vendor->work_phone }} / {{ $vendor->mobile }}</small></div>
                         <div><small>{{ $vendor->email }}</small></div>
@@ -279,19 +280,21 @@
                     <td colspan="2">Payment Mode: {{ $payment->payment_mode }}</td>
                     <td>Ref# {{ $payment->payment_mode_ref }}</td>
                 </tr>
-              
+
                 <tr>
                     <td colspan="3">The Sum of: {{ $expense->total }}</td>
                 </tr>
                 <tr>
                     <td colspan="2" style="padding-bottom: 40px">Paid For:
 
-                            <br>
-                            @foreach ($items as $item)
-                                <ul>
-                                    <li>{{($item->detail)}} <br> <small style="font-size: 9px"> Rate: {{$item->rate}} x Qty {{$item->qty}} = Amount {{$item->amount}}</small></li>
-                                </ul>
-                            @endforeach
+                        <br>
+                        @foreach ($items as $item)
+                            <ul>
+                                <li>{{ $item->detail }} <br> <small style="font-size: 9px"> Rate:
+                                        {{ $item->rate }} x Qty {{ $item->qty }} = Amount
+                                        {{ $item->amount }}</small></li>
+                            </ul>
+                        @endforeach
 
                     </td>
                     <td style="padding-bottom: 40px">Payee: {{ $payment->payee }}</td>

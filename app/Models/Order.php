@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\HasReferenceId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
 {
-    use HasFactory;
+    use HasFactory, HasReferenceId;
 
     protected $fillable = [
         "customer_id",
@@ -67,7 +68,13 @@ class Order extends Model
             );
     }
 
-    protected $appends = ['date_time', 'total_paid_amount'];
+    protected $appends = ['date_time', 'total_paid_amount', 'reference_id'];
+
+
+    public function getReferenceIdAttribute()
+    {
+        return $this->generateReferenceId("ORD");
+    }
 
     public function getDateTimeAttribute()
     {

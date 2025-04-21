@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\HasReferenceId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Invoice extends Model
 {
-    use HasFactory;
+    use HasFactory, HasReferenceId;
 
     protected $guarded = [];
 
@@ -45,11 +46,11 @@ class Invoice extends Model
         return $this->hasMany(Payment::class);
     }
 
-    protected $appends = ['date_time', 'invoice_reference_id'];
+    protected $appends = ['date_time', 'reference_id'];
 
-    public function getInvoiceReferenceIdAttribute()
+    public function getReferenceIdAttribute()
     {
-        return "INV-" . str_pad($this->id, 6, '0', STR_PAD_LEFT);
+        return $this->generateReferenceId("INV");
     }
 
     public function getDateTimeAttribute()

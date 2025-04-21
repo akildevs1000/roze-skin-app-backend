@@ -2,23 +2,35 @@
 
 namespace App\Models;
 
+use App\Traits\HasReferenceId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Customer extends Model
 {
     use HasFactory;
+    use HasReferenceId;
+
 
     protected $fillable = [
         'first_name',
         'last_name',
         'email',
         'phone',
+        'whatsapp',
     ];
 
-    protected $appends = [
-        'full_name',
-    ];
+    protected $appends = ['full_name', 'date_time', 'reference_id'];
+
+    public function getReferenceIdAttribute()
+    {
+        return $this->generateReferenceId('CST');
+    }
+
+    public function getDateTimeAttribute()
+    {
+        return date("d-M-y h:i:sa", strtotime($this->created_at));
+    }
 
     public function getFullNameAttribute()
     {
@@ -35,6 +47,15 @@ class Customer extends Model
         return $this->hasOne(BillingAddress::class);
     }
 
+    /**
+     * Get all of the orders for the Customer
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
 
     public static function storeOrUpdateCustomerWithAddresses(array $data)
     {

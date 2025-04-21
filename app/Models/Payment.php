@@ -3,20 +3,21 @@
 namespace App\Models;
 
 use App\Models\PaymentMode;
+use App\Traits\HasReferenceId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Payment extends Model
 {
-    use HasFactory;
+    use HasFactory, HasReferenceId;
 
     protected $guarded = [];
 
-    protected $appends = ['date_time', 'payment_reference_id'];
+    protected $appends = ['date_time', 'reference_id'];
 
-    public function getPaymentReferenceIdAttribute()
+    public function getReferenceIdAttribute()
     {
-        return "P-" . str_pad($this->id, 6, '0', STR_PAD_LEFT);
+        return $this->generateReferenceId("P");
     }
 
     public function getDateTimeAttribute()

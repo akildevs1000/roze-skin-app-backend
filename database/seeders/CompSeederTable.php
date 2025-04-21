@@ -29,7 +29,7 @@ class CompSeederTable extends Seeder
         ]);
 
         $company = Company::create([
-            'name' => "akil security & alarm systems",
+            'name' => "Roze Skincare",
             'member_from' => "1982-09-04",
             'expiry' => "2012-10-24",
             'max_branches' => "2",
@@ -47,7 +47,7 @@ class CompSeederTable extends Seeder
 
         $companyContact = CompanyContact::create([
             'company_id' => $company->id,
-            'name' => "akil security & alarm systems llc",
+            'name' => "Roze Skincare llc",
             'number' => "11111111",
             'position' => "demo contact position",
             'whatsapp' => "22222222",

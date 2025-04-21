@@ -21,7 +21,8 @@ class CustomerController extends Controller
      */
     public function index()
     {
-        return Customer::with(["billing_address", "shipping_address"])
+        return Customer::with(["orders", "billing_address", "shipping_address"])
+            ->withCount("orders")
             ->where("first_name", "LIKE", "%" . request("search", null) . "%")
             ->orderByDesc("id")
             ->paginate(request("per_page"));
@@ -48,25 +49,9 @@ class CustomerController extends Controller
      * @return \Illuminate\Http\Response
      */
 
-    public function update(ValidationUpdateRequest $request, Customer $customer)
+    public function update(ValidationRequest $request, Customer $customer)
     {
-        $validated = $request->validated();
-
-        $customer->update([
-            "first_name" => $validated['first_name'],
-            "last_name" => $validated['last_name'],
-            "email" => $validated['email'] ?? null,
-            "phone" => $validated['phone'],
-        ]);
-
-        if (isset($validated['shipping_address'])) {
-            Customer::storeOrUpdateShippingAddress($customer->id, $validated['shipping_address']);
-        }
-
-        if (isset($validated['billing_address'])) {
-            Customer::storeOrUpdateBillingAddress($customer->id, $validated['billing_address']);
-        }
-
+        $customer = Customer::storeOrUpdateCustomerWithAddresses($request->validated());
         return $customer;
     }
 
