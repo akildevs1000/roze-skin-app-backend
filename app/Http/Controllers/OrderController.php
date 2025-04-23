@@ -44,7 +44,7 @@ class OrderController extends Controller
             ->when(count($dates) > 0, function ($q) use ($dates) {
                 $q->whereBetween('order_date', $dates);
             })
-           
+
             ->when($customer_id, function ($q) use ($customer_id) {
                 $q->where('customer_id', $customer_id);
             })
@@ -67,9 +67,18 @@ class OrderController extends Controller
 
     public function store(ValidationRequest $request)
     {
-        // Invoice::truncate();
+        // order_id => 53449
+        // create order with same order id from website
+        // https://rozeskin.com/checkout/order-received/53449/?key=wc_order_Wa2sCxZ1pCSJY
 
         $validatedData = $request->validated();
+
+        if (Order::where('order_id', $validatedData['order_id'])->exists()) {
+            return response()->json([
+                'message' => 'Order Id' . $validatedData['order_id'] . ' already exists.',
+            ], 409);
+        }
+
         $customer = Customer::storeOrUpdateCustomerWithAddresses($validatedData);
         $validatedData["customer_id"] = $customer->id ?? 0;
         $validatedData["order_date"] = date("Y-m-d H:i:s");
@@ -85,10 +94,14 @@ class OrderController extends Controller
         return $order;
     }
 
-    public function destroy(Order $Order)
+    public function destroy($id)
     {
-        $Order->delete();
+        $order = Order::where("id", $id)->first();
+        if ($order) {
+            $order->delete();
+            return response()->noContent();
+        }
 
-        return response()->json();
+        return 500;
     }
 }
