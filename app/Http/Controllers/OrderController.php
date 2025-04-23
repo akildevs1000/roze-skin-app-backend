@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Order\ValidationRequest;
+use App\Jobs\SendWhatsappMessage;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Order;
@@ -105,8 +106,10 @@ class OrderController extends Controller
             . "Team RozeSkin 🌸";
 
 
-        (new WhatsappClientController)->send($validatedData['customer']['whatsapp'], $message);
-        
+
+        SendWhatsappMessage::dispatch($validatedData['customer']['whatsapp'], $message);
+        // (new WhatsappClientController)->send($validatedData['customer']['whatsapp'], $message);
+
         return $order;
     }
 
