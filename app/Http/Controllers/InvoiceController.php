@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Invoice\ValidationRequest;
+use App\Jobs\SendWhatsappMessage;
+use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Order;
 use Illuminate\Http\Request;
@@ -21,7 +23,7 @@ class InvoiceController extends Controller
         $status = request('status');
 
         $customer_id = request('customer_id');
-        
+
         $delivery_service_id = request('delivery_service_id');
 
         $from = request('from') ? request('from') . " 00:00:00" : date("Y-m-d 00:00:00");
@@ -85,9 +87,27 @@ class InvoiceController extends Controller
             "status" => $validatedData['status'],
         ];
 
-        $order = Invoice::create($orderPayload);
+        $invoice = Invoice::create($orderPayload);
+        $customer = Customer::where("id", $validatedData['customer_id'])->first();
+        $order = Order::where("id", $validatedData['order_id'])->first();
 
-        return $order;
+        $tracking_number = $validatedData['tracking_number'];
+
+        if ($customer && $order && $invoice) {
+            $full_name = $customer->full_name;
+            $shipping_address = $customer->shipping_address->full_address;
+
+            $message = "Dear $full_name\n\n"
+                . "Your order is on the way!\n\n"
+                . "Tracking Number: $tracking_number\n"
+                . "Shipping to: $shipping_address\n\n"
+                . "You'll receive your order soon. Thank you for shopping with us!\n"
+                . "Team RozeSkin";
+
+            SendWhatsappMessage::dispatch($customer->whatsapp, $message);
+        }
+
+        return $invoice;
     }
 
     public function update(Request $request, Invoice $Invoice)

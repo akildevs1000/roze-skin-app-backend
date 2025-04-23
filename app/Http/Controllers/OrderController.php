@@ -69,9 +69,6 @@ class OrderController extends Controller
     public function store(ValidationRequest $request)
     {
 
-
-
-
         // order_id => 53449
         // create order with same order id from website
         // https://rozeskin.com/checkout/order-received/53449/?key=wc_order_Wa2sCxZ1pCSJY
@@ -95,21 +92,18 @@ class OrderController extends Controller
         $shipping_address = $customer->shipping_address->full_address;
         $total = $order->total;
         $items = collect($order->items)->pluck('item')->implode(', ');
-        $message = "Hello $full_name 👋\n\n"
-            . "Thank you for your order at RozeSkin! 💖\n\n"
-            . "🧾 Order ID: #$order_id\n"
-            . "📦 Items: $items\n"
-            . "💰 Total: $total\n"
-            . "🚚 Shipping to: $shipping_address\n\n"
-            . "We’ll notify you once your order is on the way!\n"
-            . "If you have any questions, feel free to reply here.\n\n"
-            . "Team RozeSkin 🌸";
 
-
+        $message = "Dear $full_name\n\n"
+            . "Thank you for your order!\n\n"
+            . "Order ID: $order_id\n"
+            . "Items: $items\n"
+            . "Total: AED $total\n"
+            . "Shipping Address: $shipping_address\n\n"
+            . "We have received your order and it’s currently being processed\n"
+            . "We will notify you once it has been shipped.\n\n"
+            . "Team RozeSkin";
 
         SendWhatsappMessage::dispatch($validatedData['customer']['whatsapp'], $message);
-        // (new WhatsappClientController)->send($validatedData['customer']['whatsapp'], $message);
-
         return $order;
     }
 
