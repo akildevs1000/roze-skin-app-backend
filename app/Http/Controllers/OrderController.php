@@ -104,6 +104,7 @@ class OrderController extends Controller
             . "Team RozeSkin";
 
         SendWhatsappMessage::dispatch($validatedData['customer']['whatsapp'], $message);
+        
         return $order;
     }
 
