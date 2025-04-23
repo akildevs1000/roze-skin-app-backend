@@ -67,6 +67,10 @@ class OrderController extends Controller
 
     public function store(ValidationRequest $request)
     {
+
+
+
+
         // order_id => 53449
         // create order with same order id from website
         // https://rozeskin.com/checkout/order-received/53449/?key=wc_order_Wa2sCxZ1pCSJY
@@ -83,6 +87,26 @@ class OrderController extends Controller
         $validatedData["customer_id"] = $customer->id ?? 0;
         $validatedData["order_date"] = date("Y-m-d H:i:s");
         $order = Order::create($validatedData);
+        $validatedData['customer']['whatsapp'] = "971554501483";
+
+        $order_id = $order->order_id > 0 ? $order->order_id : $order->id;
+        $full_name = $customer->full_name;
+        $shipping_address = $customer->shipping_address->full_address;
+        $total = $order->total;
+        $items = collect($order->items)->pluck('item')->implode(', ');
+        $message = "Hello $full_name 👋\n\n"
+            . "Thank you for your order at RozeSkin! 💖\n\n"
+            . "🧾 Order ID: #$order_id\n"
+            . "📦 Items: $items\n"
+            . "💰 Total: $total\n"
+            . "🚚 Shipping to: $shipping_address\n\n"
+            . "We’ll notify you once your order is on the way!\n"
+            . "If you have any questions, feel free to reply here.\n\n"
+            . "Team RozeSkin 🌸";
+
+
+        (new WhatsappClientController)->send($validatedData['customer']['whatsapp'], $message);
+        
         return $order;
     }
 

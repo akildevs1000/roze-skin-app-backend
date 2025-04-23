@@ -9,7 +9,7 @@ class WhatsappClient extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['company_id', 'accounts'];
+    protected $fillable = ['accounts'];
 
     protected $casts = [
         'accounts' => 'array', // Automatically cast JSON to array

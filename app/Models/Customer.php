@@ -69,6 +69,7 @@ class Customer extends Model
             $customer->last_name = $data['customer']['last_name'];
             $customer->email = $data['customer']['email'] ?? null;
             $customer->phone = $data['customer']['phone'];
+            $customer->whatsapp = $data['customer']['whatsapp'];
             $customer->save();
         } else {
             // Create
@@ -77,6 +78,7 @@ class Customer extends Model
                 'last_name' => $data['customer']['last_name'],
                 'email' => $data['customer']['email'] ?? null,
                 'phone' => $data['customer']['phone'],
+                'whatsapp' => $data['customer']['whatsapp']
             ]);
         }
 

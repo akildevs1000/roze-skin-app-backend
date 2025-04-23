@@ -21,7 +21,7 @@ class ShippingAddress extends Model
             $this->address_1,
             // $this->address_2,
             $this->city ?? "---",
-            $this->state ?? "---",
+            // $this->state ?? "---",
             $this->postcode ?? "000000",
             $this->country
         ]);
