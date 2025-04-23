@@ -100,7 +100,7 @@ class InvoiceController extends Controller
             $message = "Dear $full_name\n\n"
                 . "Your order is on the way!\n\n"
                 . "Tracking Number: $tracking_number\n"
-                . "Shipping to: $shipping_address\n\n"
+                . "Shipping Address: $shipping_address\n\n"
                 . "You'll receive your order soon. Thank you for shopping with us!\n"
                 . "Team RozeSkin";
 
