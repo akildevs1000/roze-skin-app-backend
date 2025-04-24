@@ -2,16 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\ActionMarkdownMail;
-use App\Models\BookedRoom;
-use App\Models\Booking;
-use App\Models\Customer;
-use App\Models\Room;
 use App\Models\Template;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
-
 class TemplateController extends Controller
 {
     public function templateTypes()
@@ -28,16 +20,9 @@ class TemplateController extends Controller
         // }
 
         return [
-            ["id" => 10, "name" => 'On Booking'],
-            ["id" => 1, "name" => 'Inquery Create'],
-            ["id" => 2, "name" => 'Quotation Create'],
-            ["id" => 3, "name" => '1 Day before arrival'],
-            ["id" => 4, "name" => 'On arrival date'],
-            ["id" => 5, "name" => 'When customer arrived'],
-            ["id" => 6, "name" => 'On checkout date checkout reminder'],
-            ["id" => 7, "name" => 'After checkout'],
-            ["id" => 8, "name" => 'Birthday wish'],
-            ["id" => 9, "name" => 'Festival message'],
+            ["id" => 1, "name" => 'Order Received'],
+            ["id" => 2, "name" => 'Order Dispatched'],
+            ["id" => 3, "name" => 'Birthday Wish'],
         ];
     }
     /**
@@ -49,7 +34,6 @@ class TemplateController extends Controller
     {
         return Template::orderByDesc("name")
             ->where([
-                "company_id" => request("company_id", 0),
                 "medium" => request("medium", "email")
             ])
             ->get();
@@ -63,7 +47,6 @@ class TemplateController extends Controller
     public function index()
     {
         return Template::orderByDesc("id")->where([
-            "company_id" => request("company_id", 0),
             "medium" => request("medium", "email")
         ])->paginate(request("per_page", 15));
     }

@@ -14,6 +14,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\PaymentModeController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WhatsappClientController;
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
@@ -67,3 +68,7 @@ Route::get('invoice-list', [InvoiceController::class, "dropDown"]);
 Route::post('/whatsapp-client-json', [WhatsappClientController::class, 'store']);
 Route::get('/whatsapp-client-json', [WhatsappClientController::class, 'show']);
 Route::get('/whatsapp-all-clients', [WhatsappClientController::class, 'list']);
+
+Route::resource('template', TemplateController::class);
+Route::get('template-list', [TemplateController::class, "dropDown"]);
+Route::get('template-types', [TemplateController::class, "templateTypes"]);
