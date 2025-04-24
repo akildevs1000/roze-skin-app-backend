@@ -3,9 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Customer\ValidationRequest;
-use App\Http\Requests\Customer\ValidationUpdateRequest;
 use App\Models\Customer;
-use Illuminate\Support\Facades\Request;
 
 class CustomerController extends Controller
 {
@@ -77,7 +75,9 @@ class CustomerController extends Controller
                 "first_name" => $model->first_name ?? null,
                 "last_name" => $model->last_name ?? null,
                 "email" => $model->email ?? null,
+                "dob" => $model->dob ?? null,
                 "phone" => $model->phone ?? null,
+                "whatsapp" => $model->whatsapp ?? null,
             ],
             "shipping_address" => $model->shipping_address ?? null,
             "billing_address" => $model->billing_address ?? null,

@@ -27,7 +27,7 @@ class ValidationRequest extends FormRequest
             "customer.first_name" => "required|max:255",
             "customer.last_name" => "required|max:255",
             "customer.email" => "nullable",
-            "customer.phone" => "nullable",
+            "customer.dob" => "nullable",
             "customer.phone" => "required|string",
             "customer.whatsapp" => "nullable|string",
             "shipping_address.address_1" => "nullable|max:255",

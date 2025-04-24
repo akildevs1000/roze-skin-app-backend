@@ -16,15 +16,21 @@ class Customer extends Model
         'first_name',
         'last_name',
         'email',
+        'dob',
         'phone',
         'whatsapp',
     ];
 
-    protected $appends = ['full_name', 'date_time', 'reference_id'];
+    protected $appends = ['full_name', 'date_time', 'dob_display', 'reference_id'];
 
     public function getReferenceIdAttribute()
     {
         return $this->generateReferenceId('CST');
+    }
+
+    public function getDOBDisplayAttribute()
+    {
+        return date("d-M-Y", strtotime($this->dob));
     }
 
     public function getDateTimeAttribute()
@@ -68,6 +74,7 @@ class Customer extends Model
             $customer->first_name = $data['customer']['first_name'];
             $customer->last_name = $data['customer']['last_name'];
             $customer->email = $data['customer']['email'] ?? null;
+            $customer->dob = $data['customer']['dob'] ?? date("Y-m-d");
             $customer->phone = $data['customer']['phone'];
             $customer->whatsapp = $data['customer']['whatsapp'];
             $customer->save();
@@ -77,6 +84,7 @@ class Customer extends Model
                 'first_name' => $data['customer']['first_name'],
                 'last_name' => $data['customer']['last_name'],
                 'email' => $data['customer']['email'] ?? null,
+                'dob' => $data['customer']['dob'] ?? date("Y-m-d"),
                 'phone' => $data['customer']['phone'],
                 'whatsapp' => $data['customer']['whatsapp']
             ]);

@@ -24,9 +24,10 @@ class ValidationUpdateRequest extends FormRequest
     public function rules()
     {
         return [
-            "first_name" => "required|max:255",
-            "last_name" => "required|max:255",
+            "customer.first_name" => "required|max:255",
+            "customer.last_name" => "required|max:255",
             "customer.email" => "nullable|email|max:255",
+            "customer.dob" => "nullable",
             "customer.phone" => "required|string|regex:/^\+?[0-9]{7,15}$/",
             "customer.whatsapp" => "nullable|string|regex:/^\+?[0-9]{7,15}$/",
 
