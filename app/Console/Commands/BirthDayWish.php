@@ -41,7 +41,7 @@ class BirthDayWish extends Command
                     ->orWhere('whatsapp', 'like', '971%');
             })
             ->whereRaw("TO_CHAR(dob, 'MM-DD') = ?", [$today])
-            ->get(['title', 'first_name', 'last_name', 'whatsapp', 'email', 'dob', "company_id"]);
+            ->get(['first_name', 'last_name', 'whatsapp', 'email', 'dob']);
 
         if (!count($customers)) {
             $this->info('No birthdays today.');
@@ -65,7 +65,7 @@ class BirthDayWish extends Command
                 $whatsappPayload = [
                     'recipient' => $customer->whatsapp,
                     'text' => $arr["whatsapp"],
-                    'clientId' => $this->getClient($customer->company_id),
+                    'clientId' => $this->getClient(),
                 ];
                 BirthdayWishWhatsappCustomer::dispatch($whatsappPayload);
 
@@ -100,9 +100,8 @@ class BirthDayWish extends Command
             if ($template->medium == "whatsapp") {
 
                 $whatsapp = str_replace(
-                    ['[title]', '[full_name]'],
+                    ['[full_name]'],
                     [
-                        $customer->title,
                         $customer->full_name,
                     ],
                     $messageBody
@@ -117,9 +116,8 @@ class BirthDayWish extends Command
             if ($template->medium == "email") {
 
                 $email = str_replace(
-                    ['[title]', '[full_name]'],
+                    ['[full_name]'],
                     [
-                        $customer->title,
                         $customer->full_name,
                     ],
                     $messageBody
@@ -136,16 +134,16 @@ class BirthDayWish extends Command
     }
 
 
-    function getClient($company_id)
+    function getClient()
     {
         return "RS_1_1745417458638";
-        $clientId = WhatsappClient::where("company_id", $company_id)->value("accounts")[0]["clientId"] ?? "RS_1_1745417458638";
+        $clientId = WhatsappClient::value("accounts")[0]["clientId"] ?? "RS_1_1745417458638";
         return $clientId;
     }
 
     function defaultMessage()
     {
-        return "🎉 Happy Birthday, [title]. [full_name]! 🎂\n\n"
+        return "🎉 Happy Birthday, [full_name]! 🎂\n\n"
             . "Wishing you a day filled with happiness, laughter, and all the things you love the most!\n"
             . "May this year bring you success, good health, and countless joyful moments.\n\n"
             . "Enjoy your special day! 🥳\n"
