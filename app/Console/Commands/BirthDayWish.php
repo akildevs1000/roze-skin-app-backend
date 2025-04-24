@@ -133,7 +133,6 @@ class BirthDayWish extends Command
         return ["whatsapp" => trim($whatsapp), "email" => trim($email)];
     }
 
-
     function getClient()
     {
         return "RS_1_1745417458638";

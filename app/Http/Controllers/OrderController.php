@@ -3,10 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Order\ValidationRequest;
+use App\Jobs\BirthdayWishWhatsappCustomer;
+use App\Jobs\SendEmail;
 use App\Jobs\SendWhatsappMessage;
+use App\Jobs\WhastappSender;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Order;
+use App\Models\Template;
+use App\Models\WhatsappClient;
 
 class OrderController extends Controller
 {
@@ -87,24 +92,44 @@ class OrderController extends Controller
         $order = Order::create($validatedData);
         $validatedData['customer']['whatsapp'] = "971554501483";
 
-        $order_id = $order->order_id > 0 ? $order->order_id : $order->id;
-        $full_name = $customer->full_name;
-        $shipping_address = $customer->shipping_address->full_address;
-        $total = $order->total;
-        $items = collect($order->items)->pluck('item')->implode(', ');
+        $templates = Template::whereActionId(["action_id" => Template::ORDER_RECEIVED])->orderBy("id", "desc")->get();
 
-        $message = "Dear $full_name\n\n"
-            . "Thank you for your order!\n\n"
-            . "Order ID: $order_id\n"
-            . "Items: $items\n"
-            . "Total: AED $total\n"
-            . "Shipping Address: $shipping_address\n\n"
-            . "We have received your order and it’s currently being processed\n"
-            . "We will notify you once it has been shipped.\n\n"
-            . "Team RozeSkin";
+        if (!count($templates)) {
+            return $order;
+        }
+
+        $responses = [];
+
+        $arr = $this->prepareMessage($templates, $customer, $order);
+
+        if ($arr["whatsapp"]) {
+            $whatsappPayload = [
+                'recipient' => $customer->whatsapp,
+                'text' => $arr["whatsapp"],
+                'clientId' => $this->getClient(),
+            ];
+
+            WhastappSender::dispatch($whatsappPayload);
+
+            $responses[] = ["whatsapp" => $whatsappPayload];
+        }
+
+        if ($arr["email"]) {
+            $emailPayload = [
+                'recipient' => $customer->email,
+                'text' => $arr["email"],
+                'subject' => "Order Received"
+            ];
+
+            SendEmail::dispatch($emailPayload);
+
+            $responses[] = ["email" => $emailPayload];
+        }
+
+        return $responses;
 
         // SendWhatsappMessage::dispatch($validatedData['customer']['whatsapp'], $message);
-        
+
         return $order;
     }
 
@@ -125,5 +150,74 @@ class OrderController extends Controller
         }
 
         return 500;
+    }
+
+    function prepareMessage($templates, $customer, $order)
+    {
+        $full_name = $customer->full_name;
+        $order_id = $order->order_id > 0 ? $order->order_id : $order->id;
+        $items = collect($order->items)->pluck('item')->implode(', ');
+        $total = $order->total;
+        $shipping_address = $customer->shipping_address->full_address;
+
+        // $message = "Dear $full_name\n\n"
+        //     . "Thank you for your order!\n\n"
+        //     . "Order ID: $order_id\n"
+        //     . "Items: $items\n"
+        //     . "Total: AED $total\n"
+        //     . "Shipping Address: $shipping_address\n\n"
+        //     . "We have received your order and it’s currently being processed\n"
+        //     . "We will notify you once it has been shipped.\n\n"
+        //     . "Team RozeSkin";
+
+
+        $whatsapp = null;
+        $email = null;
+
+        foreach ($templates as $key => $template) {
+
+            $messageBody = $template->body;
+
+            if ($template->medium == "whatsapp") {
+
+                $whatsapp = str_replace(
+                    ['[full_name]', '[order_id]', '[items]', '[total]', '[shipping_address]'],
+                    [
+                        $full_name,$order_id,$items,$total,$shipping_address
+                    ],
+                    $messageBody
+                );
+
+                $whatsapp = preg_replace('/<p>(.*?)<\/p>/s', "$1\n", $whatsapp); // Convert <p> to new lines
+
+                $whatsapp = strip_tags($whatsapp); // Ensure no remaining tags
+
+            }
+
+            if ($template->medium == "email") {
+
+                $email = str_replace(
+                    ['[full_name]', '[order_id]', '[items]', '[total]', '[shipping_address]'],
+                    [
+                        $full_name,$order_id,$items,$total,$shipping_address
+                    ],
+                    $messageBody
+                );
+
+                $email = preg_replace('/<p>(.*?)<\/p>/s', "$1\n", $email); // Convert <p> to new lines
+
+                $email = strip_tags($email); // Ensure no remaining tags
+
+            }
+        }
+
+        return ["whatsapp" => trim($whatsapp), "email" => trim($email)];
+    }
+
+    function getClient()
+    {
+        return "RS_1_1745417458638";
+        $clientId = WhatsappClient::value("accounts")[0]["clientId"] ?? "RS_1_1745417458638";
+        return $clientId;
     }
 }
