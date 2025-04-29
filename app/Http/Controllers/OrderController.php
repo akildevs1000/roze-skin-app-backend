@@ -17,8 +17,7 @@ class OrderController extends Controller
 {
     public function latestOrder()
     {
-        return Order::where('created_at', '>=', now()->subMinutes(15)) // last 15 minutes
-            ->whereHas('invoice')
+        return Order::whereHas('invoice')
             ->with(['business_source', 'delivery_service', 'invoice'])
             ->orderByDesc('id')
             ->first();
