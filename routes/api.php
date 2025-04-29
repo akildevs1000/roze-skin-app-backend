@@ -61,6 +61,8 @@ Route::get('delivery-service-list', [DeliveryServiceController::class, "dropDown
 
 Route::apiResource('orders', OrderController::class);
 Route::get('order-list', [OrderController::class, "dropDown"]);
+Route::get('lattest-order', [OrderController::class, "lattestOrder"]);
+
 
 Route::apiResource('invoices', InvoiceController::class);
 Route::get('invoice-list', [InvoiceController::class, "dropDown"]);

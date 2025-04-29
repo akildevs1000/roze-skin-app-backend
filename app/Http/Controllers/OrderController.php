@@ -15,6 +15,10 @@ use App\Models\WhatsappClient;
 
 class OrderController extends Controller
 {
+    public function lattestOrder()
+    {
+        return Order::orderByDesc('id')->with(['business_source', 'delivery_service', "invoice"])->first();
+    }
     public function dropDown()
     {
         return Order::orderByDesc('id')->get();
@@ -183,7 +187,11 @@ class OrderController extends Controller
                 $whatsapp = str_replace(
                     ['[full_name]', '[order_id]', '[items]', '[total]', '[shipping_address]'],
                     [
-                        $full_name,$order_id,$items,$total,$shipping_address
+                        $full_name,
+                        $order_id,
+                        $items,
+                        $total,
+                        $shipping_address
                     ],
                     $messageBody
                 );
@@ -199,7 +207,11 @@ class OrderController extends Controller
                 $email = str_replace(
                     ['[full_name]', '[order_id]', '[items]', '[total]', '[shipping_address]'],
                     [
-                        $full_name,$order_id,$items,$total,$shipping_address
+                        $full_name,
+                        $order_id,
+                        $items,
+                        $total,
+                        $shipping_address
                     ],
                     $messageBody
                 );
