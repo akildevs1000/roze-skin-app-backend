@@ -15,10 +15,15 @@ use App\Models\WhatsappClient;
 
 class OrderController extends Controller
 {
-    public function lattestOrder()
+    public function latestOrder()
     {
-        return Order::orderByDesc('id')->with(['business_source', 'delivery_service', "invoice"])->first();
+        return Order::where('created_at', '>=', now()->subMinutes(15)) // last 15 minutes
+            ->whereHas('invoice')
+            ->with(['business_source', 'delivery_service', 'invoice'])
+            ->orderByDesc('id')
+            ->first();
     }
+
     public function dropDown()
     {
         return Order::orderByDesc('id')->get();
