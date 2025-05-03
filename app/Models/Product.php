@@ -26,6 +26,7 @@ class Product extends Model
 
     public function getProductWithItemNameAttribute()
     {
+        return $this->description;
         return $this->description . " " . "({$this->item_number})";
     }
 
