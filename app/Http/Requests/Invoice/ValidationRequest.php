@@ -28,7 +28,7 @@ class ValidationRequest extends FormRequest
             'order_id' => 'required|integer|min:1',
             'business_source_id' => 'required|integer|min:1',
             'delivery_service_id' => 'required|integer|min:1',
-            'tracking_number' => 'required|min:5|max:50',
+            'tracking_number' => 'nullable|min:5|max:50',
             'status' => 'required|string',
         ];
     }
