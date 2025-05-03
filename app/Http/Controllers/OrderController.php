@@ -17,6 +17,15 @@ class OrderController extends Controller
 {
     public function latestOrder()
     {
+        $latestInvoice = Invoice::latest('updated_at')->first();
+
+        if (!$latestInvoice) {
+            return null;
+        }
+    
+        return Order::with(['business_source', 'delivery_service', 'invoice'])
+            ->find($latestInvoice->order_id);
+            
         return Order::whereHas('invoice')
             ->with(['business_source', 'delivery_service', 'invoice'])
             ->orderByDesc('id')
