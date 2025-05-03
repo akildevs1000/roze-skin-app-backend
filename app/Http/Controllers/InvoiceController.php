@@ -50,7 +50,7 @@ class InvoiceController extends Controller
             ->when($customer_id, function ($q) use ($customer_id) {
                 $q->where('customer_id', $customer_id);
             })
-            ->when(count($dates) > 0, function ($q) use ($dates) {
+            ->when(request('from') && request('to'), function ($q) use ($dates) {
                 $q->whereBetween('created_at', $dates);
             })
             ->when($status, function ($q) use ($status) {
