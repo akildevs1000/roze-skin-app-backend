@@ -55,7 +55,7 @@ class OrderController extends Controller
             ->when($status, function ($q) use ($status) {
                 $q->whereHas("invoice", fn($q) => $q->where('status', $status));
             })
-            ->when(count($dates) > 0, function ($q) use ($dates) {
+            ->when(request('from') && request('to'), function ($q) use ($dates) {
                 $q->whereBetween('order_date', $dates);
             })
 
