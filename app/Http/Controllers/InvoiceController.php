@@ -133,8 +133,6 @@ class InvoiceController extends Controller
             "paid_amount" => $validated['paid_amount'],
         ];
 
-        return $orderPayload;
-
         Order::where("id", $validated['order_id'])->update($orderPayload);
 
         $Invoice->update(['status' => $validated['status']]);
