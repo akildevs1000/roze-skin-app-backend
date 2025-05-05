@@ -83,7 +83,7 @@ class InvoiceController extends Controller
             "order_id" => $validatedData['order_id'],
             "business_source_id" => $validatedData['business_source_id'],
             "delivery_service_id" => $validatedData['delivery_service_id'],
-            "tracking_number" => $validatedData['tracking_number'],
+            "tracking_number" => $validatedData['tracking_number'] ?? 0,
             "status" => $validatedData['status'],
         ];
 
@@ -127,11 +127,13 @@ class InvoiceController extends Controller
         $orderPayload = [
             "business_source_id" => $validated['business_source_id'],
             "delivery_service_id" => $validated['delivery_service_id'],
-            "tracking_number" => $validated['tracking_number'],
+            "tracking_number" => $validated['tracking_number'] ?? 0,
             "payment_method" => $validated['payment_method'],
             "payment_method_title" => $validated['payment_method_title'],
             "paid_amount" => $validated['paid_amount'],
         ];
+
+        return $orderPayload;
 
         Order::where("id", $validated['order_id'])->update($orderPayload);
 
