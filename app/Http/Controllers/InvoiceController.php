@@ -7,7 +7,9 @@ use App\Jobs\SendWhatsappMessage;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Order;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class InvoiceController extends Controller
 {
@@ -72,6 +74,48 @@ class InvoiceController extends Controller
             })
             ->orderByDesc('id')
             ->paginate($perPage);
+    }
+
+    public function stats()
+    {
+        $now = Carbon::now();
+        $currentMonth = $now->month;
+
+        // Get last month's stats from cache or compute and store them
+        $lastMonthStats = Cache::remember('invoice_stats_last_month', now()->addDays(1), function () use ($now) {
+            $lastMonth = $now->copy()->subMonth()->month;
+
+            return [
+                'invoices' => Invoice::whereMonth('created_at', $lastMonth)->count(),
+                'income' => Order::whereHas("invoice")->whereMonth('created_at', $lastMonth)->sum('total'), // this is working fine but i want from invoice from 
+            ];
+        });
+
+        // Real-time data
+        $ordersThisMonth = Invoice::whereMonth('created_at', $currentMonth)->count();
+        $incomeThisMonth = Order::whereHas("invoice")->whereMonth('created_at', $currentMonth)->sum('total');
+        $totalOrders = Invoice::count();
+
+        return [
+            [
+                'label' => 'Last Month / Current Month (Invoice)',
+                'icon' => 'mdi-cart-outline',
+                'value' => "{$lastMonthStats['invoices']} / $ordersThisMonth",
+                'color' => 'blue',
+            ],
+            [
+                'label' => 'Total Orders',
+                'icon' => 'mdi-calendar-today',
+                'value' => $totalOrders,
+                'color' => 'indigo',
+            ],
+            [
+                'label' => 'Last Month / Current Month (Income)',
+                'icon' => 'mdi-currency-usd',
+                'value' => "{$lastMonthStats['income']} / $incomeThisMonth",
+                'color' => 'green',
+            ],
+        ];
     }
 
     public function store(ValidationRequest $request)

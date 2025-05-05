@@ -12,6 +12,8 @@ use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Template;
 use App\Models\WhatsappClient;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class OrderController extends Controller
 {
@@ -22,10 +24,10 @@ class OrderController extends Controller
         if (!$latestInvoice) {
             return null;
         }
-    
+
         return Order::with(['business_source', 'delivery_service', 'invoice'])
             ->find($latestInvoice->order_id);
-            
+
         return Order::whereHas('invoice')
             ->with(['business_source', 'delivery_service', 'invoice'])
             ->orderByDesc('id')
@@ -87,6 +89,56 @@ class OrderController extends Controller
             ->with(['business_source', 'delivery_service', "invoice"])
             ->paginate($perPage);
     }
+
+    public function stats()
+    {
+        $now = Carbon::now();
+        $currentMonth = $now->month;
+
+        // Get last month's stats from cache or compute and store them
+        $lastMonthStats = Cache::remember('order_stats_last_month', now()->addDays(1), function () use ($now) {
+            $lastMonth = $now->copy()->subMonth()->month;
+
+            return [
+                'orders' => Order::whereMonth('created_at', $lastMonth)->count(),
+                'income' => Order::whereMonth('created_at', $lastMonth)->sum('total'),
+            ];
+        });
+
+        // Real-time data
+        $ordersThisMonth = Order::whereMonth('created_at', $currentMonth)->count();
+        $incomeThisMonth = Order::whereMonth('created_at', $currentMonth)->sum('total');
+        $pendingOrders = Order::whereDoesntHave('invoice')->count();
+        $totalOrders = Order::count();
+
+        return [
+            [
+                'label' => 'Last Month / Current Month (Orders)',
+                'icon' => 'mdi-cart-outline',
+                'value' => "{$lastMonthStats['orders']} / $ordersThisMonth",
+                'color' => 'blue',
+            ],
+            [
+                'label' => 'Total Orders',
+                'icon' => 'mdi-calendar-today',
+                'value' => $totalOrders,
+                'color' => 'indigo',
+            ],
+            [
+                'label' => 'Pending Order',
+                'icon' => 'mdi-clock-outline',
+                'value' => $pendingOrders,
+                'color' => 'orange',
+            ],
+            [
+                'label' => 'Last Month / Current Month (Income)',
+                'icon' => 'mdi-currency-usd',
+                'value' => "{$lastMonthStats['income']} / $incomeThisMonth",
+                'color' => 'green',
+            ],
+        ];
+    }
+
 
     public function store(ValidationRequest $request)
     {

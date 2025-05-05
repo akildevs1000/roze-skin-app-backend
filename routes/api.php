@@ -60,12 +60,14 @@ Route::apiResource('delivery-services', DeliveryServiceController::class);
 Route::get('delivery-service-list', [DeliveryServiceController::class, "dropDown"]);
 
 Route::apiResource('orders', OrderController::class);
+Route::get('orders-stats', [OrderController::class, "stats"]);
 Route::get('order-list', [OrderController::class, "dropDown"]);
 Route::get('lattest-order', [OrderController::class, "latestOrder"]);
 
 
 Route::apiResource('invoices', InvoiceController::class);
 Route::get('invoice-list', [InvoiceController::class, "dropDown"]);
+Route::get('invoices-stats', [InvoiceController::class, "stats"]);
 
 Route::post('/whatsapp-client-json', [WhatsappClientController::class, 'store']);
 Route::get('/whatsapp-client-json', [WhatsappClientController::class, 'show']);
