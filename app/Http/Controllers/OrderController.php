@@ -97,7 +97,7 @@ class OrderController extends Controller
 
         $validatedData = $request->validated();
 
-        if (Order::where('order_id', $validatedData['order_id'])->exists()) {
+        if ($validatedData['order_id'] > 0 && Order::where('order_id', $validatedData['order_id'])->exists()) {
             return response()->json([
                 'message' => 'Order Id ' . $validatedData['order_id'] . ' already exists.',
             ], 409);
