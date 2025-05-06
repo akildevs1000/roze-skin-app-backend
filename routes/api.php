@@ -63,6 +63,7 @@ Route::apiResource('orders', OrderController::class);
 Route::get('orders-stats', [OrderController::class, "stats"]);
 Route::get('order-list', [OrderController::class, "dropDown"]);
 Route::get('lattest-order', [OrderController::class, "latestOrder"]);
+Route::post('order-creater-acknowledge', [OrderController::class, "orderCreateAcknowledge"]);
 
 
 Route::apiResource('invoices', InvoiceController::class);

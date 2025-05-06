@@ -34,6 +34,11 @@ class OrderController extends Controller
             ->first();
     }
 
+    public function orderCreateAcknowledge()
+    {
+        return request()->all();
+    }
+
     public function dropDown()
     {
         return Order::orderByDesc('id')->get();
