@@ -298,8 +298,7 @@ class OrderController extends Controller
 
     function getClient()
     {
-        return "RS_1_1745417458638";
-        $clientId = WhatsappClient::value("accounts")[0]["clientId"] ?? "RS_1_1745417458638";
+        $clientId = WhatsappClient::value("accounts")[0]["clientId"] ?? "test";
         return $clientId;
     }
 }
