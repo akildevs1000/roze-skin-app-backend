@@ -26,8 +26,8 @@ class TruncateTable extends Command
             DB::table($table)->truncate();
             $this->info("Table '{$table}' truncated successfully.");
 
-            Cache::forget('order_stats_last_month');
-            Cache::forget('invoice_stats_last_month');
+            // Cache::forget('order_stats_last_month');
+            // Cache::forget('invoice_stats_last_month');
 
             return Command::SUCCESS;
         } catch (\Exception $e) {
