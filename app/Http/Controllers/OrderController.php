@@ -13,6 +13,7 @@ use App\Models\Order;
 use App\Models\Template;
 use App\Models\WhatsappClient;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class OrderController extends Controller
@@ -36,7 +37,54 @@ class OrderController extends Controller
 
     public function orderCreateAcknowledge()
     {
-        return request()->all();
+
+        $order = Order::findOrFail(request('orderPrimaryId'));
+        $order->tracking_number = request('airwayBillNumber') ?? '0';
+        $order->save();
+
+        $templates = Template::whereActionId(["action_id" => Template::ORDER_DISPATCHED])->orderBy("id", "desc")->get();
+
+        if ($templates->isEmpty()) {
+
+            return response()->json([
+                "message" => "Trigger not found. Please go to Settings → Templates and create a new template for the 'Order Dispatched' trigger. Provide a name, select the 'Order Dispatched' action, and write the message in the description box. Same thing do this for email also if you want send notification as email also"
+            ]);
+        }
+
+
+        $responses = [];
+
+        $arr = $this->prepareMessage($templates, $order->customer, $order);
+
+
+        if ($arr["whatsapp"]) {
+            $normalizePhoneNumber = $this->normalizePhoneNumber($order->customer->whatsapp);
+            if ($normalizePhoneNumber) {
+                $whatsappPayload = [
+                    'recipient' => $normalizePhoneNumber,
+                    'text' => $arr["whatsapp"],
+                    'clientId' => $this->getClient(),
+                ];
+
+                WhastappSender::dispatch($whatsappPayload);
+
+                $responses[] = ["whatsapp" => $whatsappPayload];
+            }
+        }
+
+        if ($arr["email"]) {
+            $emailPayload = [
+                'recipient' => $order->customer->email,
+                'text' => $arr["email"],
+                'subject' => "Order Received"
+            ];
+
+            SendEmail::dispatch($emailPayload);
+
+            $responses[] = ["email" => $emailPayload];
+        }
+
+        return $responses;
     }
 
     public function dropDown()
@@ -164,7 +212,6 @@ class OrderController extends Controller
         $validatedData["customer_id"] = $customer->id ?? 0;
         $validatedData["order_date"] = date("Y-m-d H:i:s");
         $order = Order::create($validatedData);
-        $validatedData['customer']['whatsapp'] = "971554501483";
 
         $templates = Template::whereActionId(["action_id" => Template::ORDER_RECEIVED])->orderBy("id", "desc")->get();
 
@@ -177,15 +224,18 @@ class OrderController extends Controller
         $arr = $this->prepareMessage($templates, $customer, $order);
 
         if ($arr["whatsapp"]) {
-            $whatsappPayload = [
-                'recipient' => $customer->whatsapp,
-                'text' => $arr["whatsapp"],
-                'clientId' => $this->getClient(),
-            ];
+            $normalizePhoneNumber = $this->normalizePhoneNumber($customer->whatsapp);
+            if ($normalizePhoneNumber) {
+                $whatsappPayload = [
+                    'recipient' => $normalizePhoneNumber,
+                    'text' => $arr["whatsapp"],
+                    'clientId' => $this->getClient(),
+                ];
 
-            WhastappSender::dispatch($whatsappPayload);
+                WhastappSender::dispatch($whatsappPayload);
 
-            $responses[] = ["whatsapp" => $whatsappPayload];
+                $responses[] = ["whatsapp" => $whatsappPayload];
+            }
         }
 
         if ($arr["email"]) {
@@ -201,10 +251,6 @@ class OrderController extends Controller
         }
 
         return $responses;
-
-        // SendWhatsappMessage::dispatch($validatedData['customer']['whatsapp'], $message);
-
-        return $order;
     }
 
     public function update(ValidationRequest $request, Order $order)
@@ -233,6 +279,8 @@ class OrderController extends Controller
         $items = collect($order->items)->pluck('item')->implode(', ');
         $total = $order->total;
         $shipping_address = $customer->shipping_address->full_address;
+        $tracking_number = $order->tracking_number;
+
 
         // $message = "Dear $full_name\n\n"
         //     . "Thank you for your order!\n\n"
@@ -255,13 +303,14 @@ class OrderController extends Controller
             if ($template->medium == "whatsapp") {
 
                 $whatsapp = str_replace(
-                    ['[full_name]', '[order_id]', '[items]', '[total]', '[shipping_address]'],
+                    ['[full_name]', '[order_id]', '[items]', '[total]', '[shipping_address]', '[tracking_number]'],
                     [
                         $full_name,
                         $order_id,
                         $items,
                         $total,
-                        $shipping_address
+                        $shipping_address,
+                        $tracking_number
                     ],
                     $messageBody
                 );
@@ -275,13 +324,14 @@ class OrderController extends Controller
             if ($template->medium == "email") {
 
                 $email = str_replace(
-                    ['[full_name]', '[order_id]', '[items]', '[total]', '[shipping_address]'],
+                    ['[full_name]', '[order_id]', '[items]', '[total]', '[shipping_address]', '[tracking_number]'],
                     [
                         $full_name,
                         $order_id,
                         $items,
                         $total,
-                        $shipping_address
+                        $shipping_address,
+                        $tracking_number
                     ],
                     $messageBody
                 );

@@ -132,24 +132,24 @@ class InvoiceController extends Controller
         ];
 
         $invoice = Invoice::create($orderPayload);
-        $customer = Customer::where("id", $validatedData['customer_id'])->first();
-        $order = Order::where("id", $validatedData['order_id'])->first();
+        // $customer = Customer::where("id", $validatedData['customer_id'])->first();
+        // $order = Order::where("id", $validatedData['order_id'])->first();
 
-        $tracking_number = $validatedData['tracking_number'];
+        // $tracking_number = $validatedData['tracking_number'];
 
-        if ($customer && $order && $invoice) {
-            $full_name = $customer->full_name;
-            $shipping_address = $customer->shipping_address->full_address;
+        // if ($customer && $order && $invoice) {
+        //     $full_name = $customer->full_name;
+        //     $shipping_address = $customer->shipping_address->full_address;
 
-            $message = "Dear $full_name\n\n"
-                . "Your order is on the way!\n\n"
-                . "Tracking Number: $tracking_number\n"
-                . "Shipping Address: $shipping_address\n\n"
-                . "You'll receive your order soon. Thank you for shopping with us!\n"
-                . "Team RozeSkin";
+        //     $message = "Dear $full_name\n\n"
+        //         . "Your order is on the way!\n\n"
+        //         . "Tracking Number: $tracking_number\n"
+        //         . "Shipping Address: $shipping_address\n\n"
+        //         . "You'll receive your order soon. Thank you for shopping with us!\n"
+        //         . "Team RozeSkin";
 
-            SendWhatsappMessage::dispatch($customer->whatsapp, $message);
-        }
+        //     SendWhatsappMessage::dispatch($customer->whatsapp, $message);
+        // }
 
         return $invoice;
     }

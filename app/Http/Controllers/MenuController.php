@@ -84,7 +84,7 @@ class MenuController extends Controller
             ],
             [
                 'topMenu' => 'settings',
-                'icon' => 'mdi-shape-outline',
+                'icon' => 'mdi-file-document-outline',
                 'module' => 'setting',
                 'title' => 'Templates',
                 'to' => '/template',
@@ -92,10 +92,10 @@ class MenuController extends Controller
             ],
             [
                 'topMenu' => 'settings',
-                'icon' => 'mdi-shape-outline',
+                'icon' => 'mdi-cog-outline',
                 'module' => 'setting',
-                'title' => 'Profile',
-                'to' => '/profile',
+                'title' => 'Setup',
+                'to' => '/setup',
                 'menu' => 'setting',
             ],
         ];

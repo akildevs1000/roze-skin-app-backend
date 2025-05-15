@@ -312,4 +312,25 @@ class Controller extends BaseController
             return $e->getMessage();
         }
     }
+
+    public function normalizePhoneNumber($number)
+    {
+        // Remove whitespace and leading '+'
+        $number = trim($number);
+        if (strpos($number, '+') === 0) {
+            $number = substr($number, 1);
+        }
+
+        // If number starts with '0', it's invalid (no country code)
+        if (strpos($number, '0') === 0) {
+            return false;
+        }
+
+        // Accept only digits
+        if (!ctype_digit($number)) {
+            return false;
+        }
+
+        return $number;
+    }
 }
