@@ -95,6 +95,9 @@ class OrderController extends Controller
     public function index()
     {
         $search = trim(request('search'));
+
+        if (!is_numeric($search)) return;
+
         $status = request('status');
 
         $customer_id = request('customer_id');
