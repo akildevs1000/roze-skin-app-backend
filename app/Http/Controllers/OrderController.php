@@ -96,7 +96,7 @@ class OrderController extends Controller
     {
         $search = trim(request('search'));
 
-        if (!is_numeric($search)) return;
+        if (request('search') && !is_numeric($search)) return;
 
         $status = request('status');
 
