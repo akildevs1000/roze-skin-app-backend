@@ -20,6 +20,15 @@ class OrderController extends Controller
 {
     public function latestOrder()
     {
+        //54083
+        // Check if a specific order ID is requested
+
+        $requestedOrderId = request('order');
+        if ($requestedOrderId) {
+            return Order::with(['business_source', 'delivery_service', 'invoice'])
+                ->find($requestedOrderId);
+        }
+
         $orderId = Invoice::whereNotNull('converted_to_invoice_at')
             ->latest('converted_to_invoice_at')
             ->value('order_id');
