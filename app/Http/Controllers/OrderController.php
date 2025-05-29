@@ -20,7 +20,7 @@ class OrderController extends Controller
 {
     public function latestOrder()
     {
-        $latestInvoice = Invoice::latest('converted_to_invoice_at')->first();
+        $latestInvoice = Invoice::whereNotNull("converted_to_invoice_at")->latest('converted_to_invoice_at')->first();
 
         if (!$latestInvoice) {
             return null;
