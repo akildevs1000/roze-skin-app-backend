@@ -105,7 +105,7 @@ class Customer extends Model
                 'address_1' => $shippingData['address_1'] ?? null,
                 'address_2' => $shippingData['address_2'] ?? null,
                 'city' => $shippingData['city'] ?? null,
-                'state' => $shippingData['state'] ?? null,
+                'state' => $shippingData['city'] ?? null,
                 'postcode' => $shippingData['postcode'] ?? null,
                 'country' => $shippingData['country'] ?? null,
             ]
@@ -120,7 +120,7 @@ class Customer extends Model
                 'address_1' => $billingData['address_1'] ?? null,
                 'address_2' => $billingData['address_2'] ?? null,
                 'city' => $billingData['city'] ?? null,
-                'state' => $billingData['state'] ?? null,
+                'state' => $billingData['city'] ?? null,
                 'postcode' => $billingData['postcode'] ?? null,
                 'country' => $billingData['country'] ?? null,
             ]
