@@ -26,7 +26,7 @@ class OrderController extends Controller
         $requestedOrderId = request('order');
         if ($requestedOrderId) {
             return Order::with(['business_source', 'delivery_service', 'invoice'])
-                ->where("order_id", $requestedOrderId);
+                ->where("order_id", $requestedOrderId)->first();
         }
 
         $orderId = Invoice::whereNotNull('converted_to_invoice_at')
