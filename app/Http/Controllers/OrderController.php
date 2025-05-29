@@ -20,14 +20,13 @@ class OrderController extends Controller
 {
     public function latestOrder()
     {
-        $latestInvoice = Invoice::whereNotNull("converted_to_invoice_at")->latest('converted_to_invoice_at')->first();
+        $orderId = Invoice::whereNotNull('converted_to_invoice_at')
+            ->latest('converted_to_invoice_at')
+            ->value('order_id');
 
-        if (!$latestInvoice) {
-            return null;
-        }
-
-        return Order::with(['business_source', 'delivery_service', 'invoice'])
-            ->find($latestInvoice->order_id);
+        return $orderId
+            ? Order::with(['business_source', 'delivery_service', 'invoice'])->find($orderId)
+            : null;
     }
 
     public function orderCreateAcknowledge()
