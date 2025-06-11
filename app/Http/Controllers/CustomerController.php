@@ -23,7 +23,7 @@ class CustomerController extends Controller
             ->withCount("orders")
             ->where("first_name", "LIKE", "%" . request("search", null) . "%")
             ->orderByDesc("id")
-            ->paginate(request("per_page"));
+            ->paginate(request("per_page", 1000));
     }
 
     /**
