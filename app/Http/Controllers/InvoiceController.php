@@ -10,6 +10,7 @@ use App\Models\Order;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class InvoiceController extends Controller
 {
@@ -120,26 +121,50 @@ class InvoiceController extends Controller
 
     public function store(ValidationRequest $request)
     {
-        $validatedData = $request->validated();
+        $validated = $request->validated();
 
-        $orderPayload = [
-            "customer_id" => $validatedData['customer_id'],
-            "order_id" => $validatedData['order_id'],
-            "business_source_id" => $validatedData['business_source_id'],
-            "delivery_service_id" => $validatedData['delivery_service_id'],
-            "tracking_number" => $validatedData['tracking_number'] ?? 0,
-            "status" => $validatedData['status'],
-            'converted_to_invoice_at' => now(),
-        ];
+        DB::beginTransaction();
 
-        // $invoice = Invoice::create($orderPayload);
+        try {
+            // Prepare invoice payload
+            $invoiceData = [
+                'customer_id' => $validated['customer_id'],
+                'order_id' => $validated['order_id'],
+                'business_source_id' => $validated['business_source_id'],
+                'delivery_service_id' => $validated['delivery_service_id'],
+                'tracking_number' => $validated['tracking_number'] ?? 0,
+                'status' => $validated['status'],
+                'converted_to_invoice_at' => now(),
+            ];
 
-        $invoice = Invoice::updateOrCreate(
-            ['order_id' => $validatedData['order_id']], // Search condition
-            $orderPayload // Data to create/update
-        );
+            // Create or update the invoice
+            $invoice = Invoice::updateOrCreate(
+                ['order_id' => $validated['order_id']],
+                $invoiceData
+            );
 
-        return $invoice;
+            // Update order financials
+            Order::where('id', $validated['order_id'])->update([
+                'total' => $validated['total'] ?? 0,
+                'discount' => $validated['discount'] ?? 0,
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Invoice stored successfully.',
+                'data' => $invoice
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while storing the invoice.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function update(Request $request, Invoice $Invoice)

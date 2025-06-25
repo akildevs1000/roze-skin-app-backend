@@ -30,6 +30,9 @@ class ValidationRequest extends FormRequest
             'delivery_service_id' => 'required|integer|min:1',
             'tracking_number' => 'nullable|min:5|max:50',
             'status' => 'required|string',
+
+            'discount' => 'nullable|numeric',
+            'total' => 'nullable|numeric',
         ];
     }
 }
