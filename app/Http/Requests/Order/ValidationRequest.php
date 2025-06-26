@@ -52,7 +52,7 @@ class ValidationRequest extends FormRequest
             'order_status' => 'required',
             'currency' => 'required|string',
             'shipping_charges' => 'required|numeric',
-            'discount' => 'required|numeric',
+            'discount' => 'nullable|numeric',
             'total' => 'required|numeric',
             'payment_method' => 'required|string',
             'payment_method_title' => 'nullable|string',
