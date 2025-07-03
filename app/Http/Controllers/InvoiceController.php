@@ -144,10 +144,10 @@ class InvoiceController extends Controller
             );
 
             // Update order financials
-            Order::where('id', $validated['order_id'])->update([
-                'total' => $validated['total'] ?? 0,
-                'discount' => $validated['discount'] ?? 0,
-            ]);
+            // Order::where('id', $validated['order_id'])->update([
+            //     'total' => $validated['total'] ?? 0,
+            //     'discount' => $validated['discount'] ?? 0,
+            // ]);
 
             DB::commit();
 
