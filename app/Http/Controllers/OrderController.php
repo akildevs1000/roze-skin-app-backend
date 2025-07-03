@@ -25,8 +25,24 @@ class OrderController extends Controller
 
         $requestedOrderId = request('order');
         if ($requestedOrderId) {
-            return Order::with(['business_source', 'delivery_service', 'invoice'])
+            $order = Order::with(['business_source', 'delivery_service', 'invoice'])
                 ->where("order_id", $requestedOrderId)->first();
+
+            if ($order) {
+                $items = $order->items; // assuming this is an array
+
+                $itemsTotal = collect($items)->sum(function ($item) {
+                    return (float) $item['total'];
+                });
+
+                $shippingCharges = (float) $order->shipping_charges;
+
+                $order->total = $itemsTotal - $shippingCharges;
+
+                return $order;
+            }
+
+            return null;
         }
 
         $orderId = Invoice::whereNotNull('converted_to_invoice_at')
