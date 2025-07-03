@@ -33,9 +33,23 @@ class OrderController extends Controller
             ->latest('converted_to_invoice_at')
             ->value('order_id');
 
-        return $orderId
-            ? Order::with(['business_source', 'delivery_service', 'invoice'])->find($orderId)
-            : null;
+        $order = Order::with(['business_source', 'delivery_service', 'invoice'])->find($orderId);
+
+        if ($orderId && $order) {
+            $items = $order->items; // assuming this is an array
+
+            $itemsTotal = collect($items)->sum(function ($item) {
+                return (float) $item['total'];
+            });
+
+            $shippingCharges = (float) $order->shipping_charges;
+
+            $order->total = $itemsTotal - $shippingCharges;
+
+            return $order;
+        }
+
+        return null;
     }
 
     public function orderCreateAcknowledge()
