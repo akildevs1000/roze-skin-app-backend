@@ -13,8 +13,8 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('orders', function (Blueprint $table) {
-            $table->string('delivery_status')->nullable(false)->change();
+         Schema::table('orders', function (Blueprint $table) {
+            $table->string('delivery_status')->default('not_delivered')->nullable(false)->change();
         });
     }
 
@@ -25,8 +25,8 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('orders', function (Blueprint $table) {
-            $table->string('delivery_status')->nullable()->change();
+         Schema::table('orders', function (Blueprint $table) {
+            $table->string('delivery_status')->nullable()->default(null)->change();
         });
     }
 };
