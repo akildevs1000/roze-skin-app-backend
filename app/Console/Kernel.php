@@ -20,6 +20,10 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule
+            ->command('track:shipment')
+            ->hourly()
+            ->emailOutputOnFailure(env("ADMIN_MAIL_RECEIVERS"));
+        $schedule
             ->command('app:process-audit-freeze')
             ->dailyAt('00:30')
             ->emailOutputOnFailure(env("ADMIN_MAIL_RECEIVERS"));
