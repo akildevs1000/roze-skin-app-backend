@@ -49,8 +49,9 @@ class TrackShipments extends Command
     {
         return Order::where("tracking_number", ">", 0)
             ->whereNotNull("tracking_number")
-            ->where('delivery_status', '!=', 'POD')
-            ->where('delivery_status', '!=', 'GHOST')
+            ->where("id", 309)
+            // ->where('delivery_status', '!=', 'POD')
+            // ->where('delivery_status', '!=', 'GHOST')
             ->with(["customer" => function ($query) {
                 $query->select("id", "first_name", "last_name", "email", "phone", "whatsapp");
                 $query->withOut("shipping_address", "billing_address");
@@ -64,6 +65,9 @@ class TrackShipments extends Command
         $trackingId = $trackingInfo['tracking_number'];
         $whatsapp = $trackingInfo['customer']["whatsapp"] ?? null;
         $email = $trackingInfo['customer']["email"] ?? null;
+
+        $whatsapp =  "971554501483";
+        $email =  "francisgill1000@gmail.com";
 
         $payload["TrackingAWB"] = $trackingId;
 
@@ -93,11 +97,11 @@ class TrackShipments extends Command
                 $this->updateOrder($trackingId, $deliveredTo, $deliveredAt);
             } else {
                 $notDeliveredLog = $this->getNotDeliveredLog($logs);
-                if ($trackingInfo['delivery_status'] !== $notDeliveredLog['Status']) {
-                    $responses = $this->otherNotfication($trackingId, $whatsapp, $email, $notDeliveredLog["Remarks"]);
-                    Log::info(json_encode($responses, JSON_PRETTY_PRINT));
-                    $this->updateStatus($trackingId, $notDeliveredLog['Status']);
-                }
+                //if ($trackingInfo['delivery_status'] !== $notDeliveredLog['Status']) {
+                $responses = $this->otherNotfication($trackingId, $whatsapp, $email, $notDeliveredLog["Remarks"]);
+                Log::info(json_encode($responses, JSON_PRETTY_PRINT));
+                $this->updateStatus($trackingId, $notDeliveredLog['Status']);
+                //}
             }
         } catch (\Exception $e) {
             Log::error("❌ Error tracking AWB $trackingId: " . $e->getMessage());
@@ -169,9 +173,19 @@ class TrackShipments extends Command
     {
         $trackingUrl = "https://rozeskin.com/tracking/?tracking_id=$trackingId";
 
-        $message = "Dear Customer,\n\nThe status of your shipment has been updated to: *$remarks*.\n\nYou can view the latest tracking updates here:\n$trackingUrl\n\nThank you for your continued trust.";
+        $message = "Dear Customer,\n\n";
+        $message .= "The status of your shipment has been updated to: Shipment Picked Up\n\n";
+        $message .= "Track your shipment here:\n";
+        $message .= "$trackingUrl\n\n";
+        $message .= "Thank you for your continued trust.";
 
-        return $this->sendNotification('status', $whatsapp, $email, $message, "Shipment Status Update");
+        return $this->sendNotification(
+            'status',
+            $whatsapp,
+            $email,
+            $message,
+            "Shipment Status Update"
+        );
     }
 
 
@@ -183,12 +197,12 @@ class TrackShipments extends Command
 
         if ($normalizePhoneNumber) {
             $whatsappPayload = [
-                'recipient' => $normalizePhoneNumber = "971554501483", // REMOVE this hardcode for production!
-                'text' => $message,
+                'recipient' => $normalizePhoneNumber,
+                'text' => $message, // ✅ Use the full message, not just the link
                 'clientId' => $this->getClient(),
             ];
 
-            // WhastappSender::dispatch($whatsappPayload);
+            // WhatsAppSender::dispatch($whatsappPayload);
 
             $responses[] = ["whatsapp" => $whatsappPayload];
         }
@@ -200,15 +214,17 @@ class TrackShipments extends Command
                 'subject' => $subject ?? ucfirst($type) . " Notification"
             ];
 
-            // SendEmail::dispatch($emailPayload);
+            SendEmail::dispatch($emailPayload);
             $responses[] = ["email" => $emailPayload];
         }
 
         return $responses;
     }
 
+
     function getClient()
     {
+        return "RS_1_1751984365570";
         $clientId = WhatsappClient::value("accounts")[0]["clientId"] ?? "test";
         return $clientId;
     }
