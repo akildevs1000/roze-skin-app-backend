@@ -22,6 +22,16 @@ class TrackShipments extends Command
 
     public function handle()
     {
+        $emailPayload = [
+            'recipient' => "francisgill1000@gmail.com",
+            'text' => "testing",
+            'subject' =>  "Notification"
+        ];
+
+        SendEmail::dispatch($emailPayload);
+
+        return 0;
+
         $payload = [
             "UserName"   => env("FIRST_FLIGHT_USER"),
             "Password"   => env("FIRST_FLIGHT_PASS"),
