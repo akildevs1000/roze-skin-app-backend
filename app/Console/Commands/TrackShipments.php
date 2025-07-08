@@ -204,7 +204,7 @@ class TrackShipments extends Command
                 'clientId' => $this->getClient(),
             ];
 
-            // WhastappSender::dispatch($whatsappPayload);
+            WhastappSender::dispatch($whatsappPayload);
 
             $responses[] = ["whatsapp" => $whatsappPayload];
         }
@@ -216,7 +216,7 @@ class TrackShipments extends Command
                 'subject' => $subject ?? ucfirst($type) . " Notification"
             ];
 
-            // SendEmail::dispatch($emailPayload);
+            SendEmail::dispatch($emailPayload);
             $responses[] = ["email" => $emailPayload];
         }
 
