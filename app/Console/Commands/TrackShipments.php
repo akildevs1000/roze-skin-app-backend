@@ -93,13 +93,15 @@ class TrackShipments extends Command
                 );
 
                 $responses = $this->deliveredNotification($whatsapp, $email, $deliveredTo, $deliveredAt);
-                Log::info(json_encode($responses, JSON_PRETTY_PRINT));
+                // Log::info(json_encode($responses, JSON_PRETTY_PRINT));
+                $this->info(json_encode($responses, JSON_PRETTY_PRINT));
                 $this->updateOrder($trackingId, $deliveredTo, $deliveredAt);
             } else {
                 $notDeliveredLog = $this->getNotDeliveredLog($logs);
                 //if ($trackingInfo['delivery_status'] !== $notDeliveredLog['Status']) {
                 $responses = $this->otherNotfication($trackingId, $whatsapp, $email, $notDeliveredLog["Remarks"]);
-                Log::info(json_encode($responses, JSON_PRETTY_PRINT));
+                // Log::info(json_encode($responses, JSON_PRETTY_PRINT));
+                $this->info(json_encode($responses, JSON_PRETTY_PRINT));
                 $this->updateStatus($trackingId, $notDeliveredLog['Status']);
                 //}
             }
