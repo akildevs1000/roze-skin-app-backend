@@ -66,8 +66,8 @@ class TrackShipments extends Command
         $whatsapp = $trackingInfo['customer']["whatsapp"] ?? null;
         $email = $trackingInfo['customer']["email"] ?? null;
 
-        $whatsapp =  "971554501483";
-        $email =  "francisgill1000@gmail.com";
+        // $whatsapp =  "971554501483";
+        // $email =  "francisgill1000@gmail.com";
 
         $payload["TrackingAWB"] = $trackingId;
 
@@ -202,7 +202,7 @@ class TrackShipments extends Command
                 'clientId' => $this->getClient(),
             ];
 
-            // WhatsAppSender::dispatch($whatsappPayload);
+            WhastappSender::dispatch($whatsappPayload);
 
             $responses[] = ["whatsapp" => $whatsappPayload];
         }
@@ -224,7 +224,6 @@ class TrackShipments extends Command
 
     function getClient()
     {
-        return "RS_1_1751984365570";
         $clientId = WhatsappClient::value("accounts")[0]["clientId"] ?? "test";
         return $clientId;
     }
