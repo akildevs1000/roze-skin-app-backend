@@ -66,8 +66,8 @@ class TrackShipments extends Command
         $whatsapp = $trackingInfo['customer']["whatsapp"] ?? null;
         $email = $trackingInfo['customer']["email"] ?? null;
 
-        // $whatsapp =  "971554501483";
-        // $email =  "francisgill1000@gmail.com";
+        $whatsapp =  "971554501483";
+        $email =  "francisgill1000@gmail.com";
 
         $payload["TrackingAWB"] = $trackingId;
 
