@@ -23,23 +23,23 @@ class TrackShipments extends Command
     public function handle()
     {
 
-        $emailPayload = [
-            'recipient' => "francisgill1000@gmail.com",
-            'text' => "If you're seeing this, SMTP from Live is working!",
-            'subject' => "Test Email from Live via Gmail"
-        ];
+        // $emailPayload = [
+        //     'recipient' => "francisgill1000@gmail.com",
+        //     'text' => "If you're seeing this, SMTP from Live is working!",
+        //     'subject' => "Test Email from Live via Gmail"
+        // ];
 
-        SendEmail::dispatch($emailPayload);
+        // SendEmail::dispatch($emailPayload);
 
-        $whatsappPayload = [
-            'recipient' => "971554501483",
-            'text' => "If you're seeing this, Whatsapp is working!", // ✅ Use the full message, not just the link
-            'clientId' => $this->getClient(),
-        ];
+        // $whatsappPayload = [
+        //     'recipient' => "971554501483",
+        //     'text' => "If you're seeing this, Whatsapp is working!", // ✅ Use the full message, not just the link
+        //     'clientId' => $this->getClient(),
+        // ];
 
-        WhastappSender::dispatch($whatsappPayload);
+        // WhastappSender::dispatch($whatsappPayload);
 
-        return;
+        // return;
 
         $payload = [
             "UserName"   => env("FIRST_FLIGHT_USER"),

@@ -21,7 +21,7 @@ class Kernel extends ConsoleKernel
     {
         $schedule
             ->command('track:shipment')
-            ->hourly()
+            ->everyFiveMinutes()
             ->emailOutputOnFailure(env("ADMIN_MAIL_RECEIVERS"));
         $schedule
             ->command('app:process-audit-freeze')
