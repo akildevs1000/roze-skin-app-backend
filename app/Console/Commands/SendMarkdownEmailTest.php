@@ -8,15 +8,17 @@ use App\Mail\TestMarkdownMail;
 
 class SendMarkdownEmailTest extends Command
 {
-    protected $signature = 'email:test-markdown {email}';
+    protected $signature = 'email:test-markdown {email} {trackingId}';
     protected $description = 'Send a test email with Markdown content';
 
     public function handle()
     {
         $email = $this->argument('email');
+        $trackingId = $this->argument('trackingId');
 
-        Mail::to($email)->send(new TestMarkdownMail());
-
-        $this->info("Markdown test email sent to {$email}");
+        if ($trackingId) {
+            Mail::to($email)->send(new TestMarkdownMail($trackingId));
+            $this->info("Markdown test email sent to {$email}");
+        }
     }
 }

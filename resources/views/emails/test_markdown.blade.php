@@ -3,7 +3,7 @@
 
 The status of your shipment has been updated.
 
-[Track your shipment here](https://rozeskin.com/tracking/?tracking_id=5100308838)
+[Track your shipment here](https://rozeskin.com/tracking/?tracking_id={{ $trackingId }})
 
 Thanks,<br>
 RozeSkin
