@@ -70,7 +70,7 @@ class TrackShipments extends Command
     {
         return Order::where("tracking_number", ">", 0)
             ->whereNotNull("tracking_number")
-            // ->where("tracking_number", 5100308838) // FOR TESTING ONLY
+            ->where("tracking_number", 5100308838) // FOR TESTING ONLY
             ->where('delivery_status', '!=', 'POD')
             ->where('delivery_status', '!=', 'GHOST')
             ->with(["customer" => function ($query) {
@@ -90,14 +90,10 @@ class TrackShipments extends Command
 
         // Testing Only
 
-        if ($trackingId == 5100308838) {
-            $whatsapp =  "971554501483";
-            $email =  "francisgill1000@gmail.com";
-            $responses = $this->otherNotfication($trackingId, $whatsapp, $email);
-            $this->info(json_encode($responses, JSON_PRETTY_PRINT));
-            return;
-        }
-
+        $whatsapp =  "971554501483";
+        $email =  "francisgill1000@gmail.com";
+        $responses = $this->otherNotfication($trackingId, $whatsapp, $email);
+        $this->info(json_encode($responses, JSON_PRETTY_PRINT));
         return;
 
         // Testing Only End
