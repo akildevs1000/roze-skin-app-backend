@@ -2,29 +2,25 @@
 
 namespace App\Console\Commands;
 
+use App\Jobs\SendRawEmailJob;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
 
 class SendTestEmail extends Command
 {
     // "email" is now optional with the `?`
-    protected $signature = 'email:tester {email?}';
+    protected $signature = 'email:tester {email?} {subject?}';
     protected $description = 'Send test email using Gmail SMTP (optional recipient)';
 
     public function handle()
     {
         // Use provided email or default to francisgill1000@gmail.com
         $to = $this->argument('email') ?? 'francisgill1000@gmail.com';
+        $subject = $this->argument('subject') ?? 'Test Email from Live via Gmail';
+        $text = "If you're seeing this, SMTP from Live is working!";
+        SendRawEmailJob::dispatch($to, $subject, $text);
+        $this->info("✅ Email has been queued to {$to} with subject: \"{$subject}\"");
 
-        try {
-            Mail::raw("If you're seeing this, SMTP from Live is working!", function ($message) use ($to) {
-                $message->to($to)
-                    ->subject('Test Email from Live via Gmail');
-            });
-
-            $this->info("✅ Email sent to {$to} successfully!");
-        } catch (\Exception $e) {
-            $this->error("❌ Failed to send email: " . $e->getMessage());
-        }
+        return 0;
     }
 }
