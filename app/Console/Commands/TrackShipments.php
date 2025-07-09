@@ -98,6 +98,8 @@ class TrackShipments extends Command
             return;
         }
 
+        return;
+
         // Testing Only End
 
         try {
