@@ -2,37 +2,29 @@
 
 namespace App\Console\Commands;
 
-use App\Jobs\SendTestEmailJob;
-use App\Mail\ActionMarkdownMail;
-use App\Mail\TestMail;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
 
 class SendTestEmail extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'email:send-test';
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Send a test email';
-    /**
-     * Execute the console command.
-     *
-     * @return int
-     */
+    // "email" is now optional with the `?`
+    protected $signature = 'email:tester {email?}';
+    protected $description = 'Send test email using Gmail SMTP (optional recipient)';
+
     public function handle()
     {
-        $to = $this->ask("email", "akildevs1000@gmail.com");
-        $subject = $this->ask("subject", "subject");
-        $body = $this->ask("body", "body");
-        Mail::to($to)->queue(new TestMail($subject, $body));
-        $this->info('Test email job sent successfully!');
+        // Use provided email or default to francisgill1000@gmail.com
+        $to = $this->argument('email') ?? 'francisgill1000@gmail.com';
+
+        try {
+            Mail::raw("If you're seeing this, SMTP from Live is working!", function ($message) use ($to) {
+                $message->to($to)
+                    ->subject('Test Email from Live via Gmail');
+            });
+
+            $this->info("✅ Email sent to {$to} successfully!");
+        } catch (\Exception $e) {
+            $this->error("❌ Failed to send email: " . $e->getMessage());
+        }
     }
 }
