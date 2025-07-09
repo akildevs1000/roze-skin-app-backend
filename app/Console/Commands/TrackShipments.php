@@ -215,12 +215,13 @@ class TrackShipments extends Command
             $email,
             $message,
             "Shipment Status Update",
-            $trackingId
+            $trackingId,
+            $full_name
         );
     }
 
 
-    public function sendNotification($type, $whatsapp, $email, $message, $subject = null, $trackingId)
+    public function sendNotification($type, $whatsapp, $email, $message, $subject = null, $trackingId, $full_name)
     {
         $responses = [];
 
@@ -246,7 +247,7 @@ class TrackShipments extends Command
             ];
 
             if ($trackingId) {
-                Mail::to($email)->queue(new TestMarkdownMail($trackingId));
+                Mail::to($email)->queue(new TestMarkdownMail($full_name, $trackingId));
             }
             $responses[] = ["email" => $emailPayload];
         }

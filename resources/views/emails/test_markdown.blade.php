@@ -1,5 +1,5 @@
 @component('mail::message')
-# Dear Customer!
+# Dear {{ $full_name }},
 
 The status of your shipment has been updated.
 You can track your order using the link below:
