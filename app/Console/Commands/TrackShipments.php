@@ -90,8 +90,8 @@ class TrackShipments extends Command
 
         // Testing Only
 
-        $whatsapp =  "971554501483";
-        $email =  "francisgill1000@gmail.com";
+        // $whatsapp =  "971554501483";
+        // $email =  "francisgill1000@gmail.com";
         $responses = $this->otherNotfication($trackingId, $whatsapp, $email);
         $this->info(json_encode($responses, JSON_PRETTY_PRINT));
         return;
