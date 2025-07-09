@@ -71,7 +71,7 @@ class TrackShipments extends Command
         return Order::where("tracking_number", ">", 0)
             ->whereNotNull("tracking_number")
             ->where("tracking_number", 5100308838) // FOR TESTING ONLY
-            // ->where('delivery_status', '!=', 'POD')
+            ->where('delivery_status', '!=', 'POD')
             // ->where('delivery_status', '!=', 'GHOST')
             ->with(["customer" => function ($query) {
                 $query->select("id", "first_name", "last_name", "email", "phone", "whatsapp");
@@ -103,7 +103,7 @@ class TrackShipments extends Command
 
             if (empty($data['AirwayBillTrackList'][0]['TrackingLogDetails'])) {
                 Log::warning("⚠️ No logs found for AWB: $trackingId");
-                $this->updateStatus($trackingId, "GHOST");
+                // $this->updateStatus($trackingId, "GHOST");
                 return;
             }
 
