@@ -10,16 +10,17 @@ class RawTextMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public string $text;
+    public string $trackingId;
 
-    public function __construct(string $text)
-    {
-        $this->text = $text;
-    }
+    // public function __construct(string $trackingId)
+    // {
+    //     $this->trackingId = $trackingId;
+    // }
 
     public function build()
     {
-        return $this->subject($this->subject ?? 'Default Subject')
-            ->text('emails.raw'); // plain text blade file
+        return $this->subject('Shipment Update')
+            ->view('emails.raw')
+            ->with(['trackingId' => 5100308838]);
     }
 }
