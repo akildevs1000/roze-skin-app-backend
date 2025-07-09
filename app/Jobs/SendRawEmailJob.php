@@ -27,8 +27,8 @@ class SendRawEmailJob implements ShouldQueue
     public function handle()
     {
         Mail::raw($this->text, function ($message) {
-            $message->to($this->to)
-                    ->subject($this->subject);
+            $message->to($this->to);
+            $message->subject($this->subject);
         });
     }
 }
