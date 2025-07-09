@@ -22,6 +22,25 @@ class TrackShipments extends Command
 
     public function handle()
     {
+
+        $emailPayload = [
+            'recipient' => "francisgill1000@gmail.com",
+            'text' => "If you're seeing this, SMTP from Live is working!",
+            'subject' => "Test Email from Live via Gmail"
+        ];
+
+        SendEmail::dispatch($emailPayload);
+
+        $whatsappPayload = [
+            'recipient' => "971554501483",
+            'text' => "If you're seeing this, Whatsapp is working!", // ✅ Use the full message, not just the link
+            'clientId' => $this->getClient(),
+        ];
+
+        WhastappSender::dispatch($whatsappPayload);
+
+        return;
+
         $payload = [
             "UserName"   => env("FIRST_FLIGHT_USER"),
             "Password"   => env("FIRST_FLIGHT_PASS"),
@@ -49,7 +68,7 @@ class TrackShipments extends Command
     {
         return Order::where("tracking_number", ">", 0)
             ->whereNotNull("tracking_number")
-            // ->where("id", 309)
+            ->where("tracking_number", 5100308838) // FOR TESTING ONLY
             ->where('delivery_status', '!=', 'POD')
             ->where('delivery_status', '!=', 'GHOST')
             ->with(["customer" => function ($query) {
@@ -99,10 +118,10 @@ class TrackShipments extends Command
             } else {
                 $notDeliveredLog = $this->getNotDeliveredLog($logs);
                 if ($trackingInfo['delivery_status'] !== $notDeliveredLog['Status']) {
-                $responses = $this->otherNotfication($trackingId, $whatsapp, $email, $notDeliveredLog["Remarks"]);
-                // Log::info(json_encode($responses, JSON_PRETTY_PRINT));
-                $this->info(json_encode($responses, JSON_PRETTY_PRINT));
-                $this->updateStatus($trackingId, $notDeliveredLog['Status']);
+                    $responses = $this->otherNotfication($trackingId, $whatsapp, $email, $notDeliveredLog["Remarks"]);
+                    // Log::info(json_encode($responses, JSON_PRETTY_PRINT));
+                    $this->info(json_encode($responses, JSON_PRETTY_PRINT));
+                    $this->updateStatus($trackingId, $notDeliveredLog['Status']);
                 }
             }
         } catch (\Exception $e) {
