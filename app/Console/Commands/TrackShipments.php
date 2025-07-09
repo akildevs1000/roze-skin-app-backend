@@ -84,17 +84,18 @@ class TrackShipments extends Command
     private function trackShipment($trackingInfo, array $payload): void
     {
         $trackingId = $trackingInfo['tracking_number'];
+        $full_name = $trackingInfo['customer']["full_name"] ?? null;
         $whatsapp = $trackingInfo['customer']["whatsapp"] ?? null;
         $email = $trackingInfo['customer']["email"] ?? null;
         $payload["TrackingAWB"] = $trackingId;
 
         // // Testing Only
 
-        // $whatsapp =  "971554501483";
-        // $email =  "francisgill1000@gmail.com";
-        // $responses = $this->otherNotfication($trackingId, $whatsapp, $email);
-        // $this->info(json_encode($responses, JSON_PRETTY_PRINT));
-        // return;
+        $whatsapp =  "971554501483";
+        $email =  "francisgill1000@gmail.com";
+        $responses = $this->otherNotfication($trackingId, $whatsapp, $email, $full_name);
+        $this->info(json_encode($responses, JSON_PRETTY_PRINT));
+        return;
 
         // // Testing Only End
 
@@ -119,14 +120,14 @@ class TrackShipments extends Command
                     $deliveredLog['ActivityTime'] ?? ''
                 );
 
-                $responses = $this->deliveredNotification($whatsapp, $email, $deliveredTo, $deliveredAt, $trackingId);
+                $responses = $this->deliveredNotification($whatsapp, $email, $deliveredTo, $deliveredAt, $trackingId, $full_name);
                 Log::info(json_encode($responses, JSON_PRETTY_PRINT));
                 $this->info(json_encode($responses, JSON_PRETTY_PRINT));
                 $this->updateOrder($trackingId, $deliveredTo, $deliveredAt);
             } else {
                 $notDeliveredLog = $this->getNotDeliveredLog($logs);
                 if ($trackingInfo['delivery_status'] !== $notDeliveredLog['Status']) {
-                    $responses = $this->otherNotfication($trackingId, $whatsapp, $email);
+                    $responses = $this->otherNotfication($trackingId, $whatsapp, $email, $full_name);
                     Log::info(json_encode($responses, JSON_PRETTY_PRINT));
                     $this->info(json_encode($responses, JSON_PRETTY_PRINT));
                     $this->updateStatus($trackingId, $notDeliveredLog['Status']);
@@ -189,24 +190,24 @@ class TrackShipments extends Command
         $this->counter++;
     }
 
-    public function deliveredNotification($whatsapp, $email, $deliveredTo, $deliveredAt, $trackingId)
+    public function deliveredNotification($whatsapp, $email, $deliveredTo, $deliveredAt, $trackingId, $full_name)
     {
         $formattedDate = date('F j, Y \a\t h:i A', strtotime($deliveredAt));
 
-        $message = "Dear Customer,\n\nYour shipment has been successfully delivered to *$deliveredTo* on *$formattedDate*.\n\nThank you for choosing our service.";
+        $message = "Dear $full_name,\n\nYour shipment has been successfully delivered to *$deliveredTo* on *$formattedDate*.\n\nThank you for choosing our service.";
 
         return $this->sendNotification('delivered', $whatsapp, $email, $message, "Order Delivered", $trackingId);
     }
 
-    public function otherNotfication($trackingId, $whatsapp, $email)
+    public function otherNotfication($trackingId, $whatsapp, $email, $full_name)
     {
         $trackingUrl = "https://rozeskin.com/tracking/?tracking_id=$trackingId";
 
-        $message = "Dear Customer,\n\n";
+        $message = "Dear $full_name,\n\n";
         $message .= "The status of your shipment has been updated.\n\n";
-        $message .= "Track your shipment here:\n";
+        $message .= "You can track your order using the link below:\n";
         $message .= "$trackingUrl\n\n";
-        $message .= "Thank you for your continued trust.";
+        $message .= "Thank you for shopping with Roze Skincare!";
 
         return $this->sendNotification(
             'status',
@@ -241,7 +242,7 @@ class TrackShipments extends Command
             $emailPayload = [
                 'recipient' => $email,
                 'text' => $message,
-                'subject' => $subject ?? ucfirst($type) . " Notification"
+                'subject' => "Order Status Update",
             ];
 
             if ($trackingId) {
