@@ -203,7 +203,7 @@ class TrackShipments extends Command
         $trackingUrl = "https://rozeskin.com/tracking/?tracking_id=$trackingId";
 
         $message = "Dear Customer,\n\n";
-        $message .= "The status of your shipment has been updated to: Shipment Picked Up\n\n";
+        $message .= "The status of your shipment has been updated.\n\n";
         $message .= "Track your shipment here:\n";
         $message .= "$trackingUrl\n\n";
         $message .= "Thank you for your continued trust.";
