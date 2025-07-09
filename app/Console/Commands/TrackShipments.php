@@ -247,7 +247,7 @@ class TrackShipments extends Command
             ];
 
             if ($trackingId) {
-                Mail::to($email)->queue(new TestMarkdownMail($full_name, $trackingId));
+                Mail::to($email)->queue(new TestMarkdownMail($trackingId,$full_name));
             }
             $responses[] = ["email" => $emailPayload];
         }
