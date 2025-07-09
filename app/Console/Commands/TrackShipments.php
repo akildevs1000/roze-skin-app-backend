@@ -89,15 +89,15 @@ class TrackShipments extends Command
         $email = $trackingInfo['customer']["email"] ?? null;
         $payload["TrackingAWB"] = $trackingId;
 
-        // // Testing Only
+        // Testing Only
 
-        $whatsapp =  "971554501483";
-        $email =  "francisgill1000@gmail.com";
-        $responses = $this->otherNotfication($trackingId, $whatsapp, $email, $full_name);
-        $this->info(json_encode($responses, JSON_PRETTY_PRINT));
-        return;
+        // $whatsapp =  "971554501483";
+        // $email =  "francisgill1000@gmail.com";
+        // $responses = $this->otherNotfication($trackingId, $whatsapp, $email, $full_name);
+        // $this->info(json_encode($responses, JSON_PRETTY_PRINT));
+        // return;
 
-        // // Testing Only End
+        // Testing Only End
 
         try {
             $data = $this->getDataFromFirstFlightApi($payload);
