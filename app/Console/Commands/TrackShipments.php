@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Http\Controllers\Controller;
 use App\Jobs\SendEmail;
 use App\Jobs\WhastappSender;
+use App\Mail\TestMarkdownMail;
 use App\Models\Order;
 use App\Models\WhatsappClient;
 use Illuminate\Console\Command;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Mail;
 
 class TrackShipments extends Command
 {
@@ -205,12 +207,13 @@ class TrackShipments extends Command
             $whatsapp,
             $email,
             $message,
-            "Shipment Status Update"
+            "Shipment Status Update",
+            $trackingId
         );
     }
 
 
-    public function sendNotification($type, $whatsapp, $email, $message, $subject = null)
+    public function sendNotification($type, $whatsapp, $email, $message, $subject = null, $trackingId)
     {
         $responses = [];
 
@@ -235,7 +238,9 @@ class TrackShipments extends Command
                 'subject' => $subject ?? ucfirst($type) . " Notification"
             ];
 
-            SendEmail::dispatch($emailPayload);
+            if ($trackingId) {
+                Mail::to($email)->send(new TestMarkdownMail($trackingId));
+            }
             $responses[] = ["email" => $emailPayload];
         }
 
