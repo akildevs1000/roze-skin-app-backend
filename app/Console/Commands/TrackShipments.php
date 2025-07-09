@@ -196,7 +196,7 @@ class TrackShipments extends Command
 
         $message = "Dear $full_name,\n\nYour shipment has been successfully delivered to *$deliveredTo* on *$formattedDate*.\n\nThank you for choosing our service.";
 
-        return $this->sendNotification('delivered', $whatsapp, $email, $message, "Order Delivered", $trackingId);
+        return $this->sendNotification('delivered', $whatsapp, $email, $message, "Order Delivered", $trackingId, $full_name);
     }
 
     public function otherNotfication($trackingId, $whatsapp, $email, $full_name)
