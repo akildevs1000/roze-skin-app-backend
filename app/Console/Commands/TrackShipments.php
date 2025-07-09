@@ -113,7 +113,7 @@ class TrackShipments extends Command
                     $deliveredLog['ActivityTime'] ?? ''
                 );
 
-                $responses = $this->deliveredNotification($whatsapp, $email, $deliveredTo, $deliveredAt);
+                $responses = $this->deliveredNotification($whatsapp, $email, $deliveredTo, $deliveredAt, $trackingId);
                 // Log::info(json_encode($responses, JSON_PRETTY_PRINT));
                 $this->info(json_encode($responses, JSON_PRETTY_PRINT));
                 $this->updateOrder($trackingId, $deliveredTo, $deliveredAt);
@@ -183,13 +183,13 @@ class TrackShipments extends Command
         $this->counter++;
     }
 
-    public function deliveredNotification($whatsapp, $email, $deliveredTo, $deliveredAt)
+    public function deliveredNotification($whatsapp, $email, $deliveredTo, $deliveredAt, $trackingId)
     {
         $formattedDate = date('F j, Y \a\t h:i A', strtotime($deliveredAt));
 
         $message = "Dear Customer,\n\nYour shipment has been successfully delivered to *$deliveredTo* on *$formattedDate*.\n\nThank you for choosing our service.";
 
-        return $this->sendNotification('delivered', $whatsapp, $email, $message, "Order Delivered");
+        return $this->sendNotification('delivered', $whatsapp, $email, $message, "Order Delivered", $trackingId);
     }
 
     public function otherNotfication($trackingId, $whatsapp, $email, $remarks)
