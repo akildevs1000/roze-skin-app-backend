@@ -19,6 +19,7 @@ class RawTextMail extends Mailable
 
     public function build()
     {
+        
         return $this->subject('Shipment Update')
             ->view('emails.raw')
             ->with(['trackingId' => 5100308838]);

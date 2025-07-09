@@ -14,15 +14,6 @@ class SendTestEmail extends Command
 
     public function handle()
     {
-
-        Mail::send([], [], function ($message) {
-            $message->to('francisgill1000@gmail.com')
-                ->subject('Test HTML Email')
-                ->setBody('<h1>Hello!</h1><p>This is a test email.</p>', 'text/html');
-        });
-
-        return;
-
         // Use provided email or default to francisgill1000@gmail.com
         $to = $this->argument('email') ?? 'francisgill1000@gmail.com';
         $subject = $this->argument('subject') ?? 'Test Email from Live via Gmail';
