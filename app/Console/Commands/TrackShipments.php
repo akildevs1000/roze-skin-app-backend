@@ -70,7 +70,7 @@ class TrackShipments extends Command
     {
         return Order::where("tracking_number", ">", 0)
             ->whereNotNull("tracking_number")
-            ->where("tracking_number", 5100308838) // FOR TESTING ONLY
+            // ->where("tracking_number", 5100308838) // FOR TESTING ONLY
             ->where('delivery_status', '!=', 'POD')
             ->where('delivery_status', '!=', 'GHOST')
             ->with(["customer" => function ($query) {
@@ -86,52 +86,57 @@ class TrackShipments extends Command
         $trackingId = $trackingInfo['tracking_number'];
         $whatsapp = $trackingInfo['customer']["whatsapp"] ?? null;
         $email = $trackingInfo['customer']["email"] ?? null;
-
-        // $whatsapp =  "971554501483";
-        // $email =  "francisgill1000@gmail.com";
-
         $payload["TrackingAWB"] = $trackingId;
 
-        $responses = $this->otherNotfication($trackingId, $whatsapp, $email);
-        $this->info(json_encode($responses, JSON_PRETTY_PRINT));
+        // Testing Only
 
-        // try {
-        //     $data = $this->getDataFromFirstFlightApi($payload);
+        if ($trackingId == 5100308838) {
+            $whatsapp =  "971554501483";
+            $email =  "francisgill1000@gmail.com";
+            $responses = $this->otherNotfication($trackingId, $whatsapp, $email);
+            $this->info(json_encode($responses, JSON_PRETTY_PRINT));
+            return;
+        }
 
-        //     if (empty($data['AirwayBillTrackList'][0]['TrackingLogDetails'])) {
-        //         Log::warning("⚠️ No logs found for AWB: $trackingId");
-        //         $this->updateStatus($trackingId, "GHOST");
-        //         return;
-        //     }
+        // Testing Only End
 
-        //     $logs = $data['AirwayBillTrackList'][0]['TrackingLogDetails'];
+        try {
+            $data = $this->getDataFromFirstFlightApi($payload);
 
-        //     if ($this->isDelivered($logs)) {
-        //         $deliveredLog = $this->getDeliveredLog($logs);
+            if (empty($data['AirwayBillTrackList'][0]['TrackingLogDetails'])) {
+                Log::warning("⚠️ No logs found for AWB: $trackingId");
+                $this->updateStatus($trackingId, "GHOST");
+                return;
+            }
 
-        //         $deliveredTo = $deliveredLog['DeliveredTo'] ?? '';
+            $logs = $data['AirwayBillTrackList'][0]['TrackingLogDetails'];
 
-        //         $deliveredAt = $this->parseDeliveredAt(
-        //             $deliveredLog['ActivityDate'] ?? '',
-        //             $deliveredLog['ActivityTime'] ?? ''
-        //         );
+            if ($this->isDelivered($logs)) {
+                $deliveredLog = $this->getDeliveredLog($logs);
 
-        //         $responses = $this->deliveredNotification($whatsapp, $email, $deliveredTo, $deliveredAt, $trackingId);
-        //         Log::info(json_encode($responses, JSON_PRETTY_PRINT));
-        //         $this->info(json_encode($responses, JSON_PRETTY_PRINT));
-        //         $this->updateOrder($trackingId, $deliveredTo, $deliveredAt);
-        //     } else {
-        //         $notDeliveredLog = $this->getNotDeliveredLog($logs);
-        //         if ($trackingInfo['delivery_status'] !== $notDeliveredLog['Status']) {
-        //             $responses = $this->otherNotfication($trackingId, $whatsapp, $email, $notDeliveredLog["Remarks"]);
-        //             Log::info(json_encode($responses, JSON_PRETTY_PRINT));
-        //             $this->info(json_encode($responses, JSON_PRETTY_PRINT));
-        //             $this->updateStatus($trackingId, $notDeliveredLog['Status']);
-        //         }
-        //     }
-        // } catch (\Exception $e) {
-        //     Log::error("❌ Error tracking AWB $trackingId: " . $e->getMessage());
-        // }
+                $deliveredTo = $deliveredLog['DeliveredTo'] ?? '';
+
+                $deliveredAt = $this->parseDeliveredAt(
+                    $deliveredLog['ActivityDate'] ?? '',
+                    $deliveredLog['ActivityTime'] ?? ''
+                );
+
+                $responses = $this->deliveredNotification($whatsapp, $email, $deliveredTo, $deliveredAt, $trackingId);
+                Log::info(json_encode($responses, JSON_PRETTY_PRINT));
+                $this->info(json_encode($responses, JSON_PRETTY_PRINT));
+                $this->updateOrder($trackingId, $deliveredTo, $deliveredAt);
+            } else {
+                $notDeliveredLog = $this->getNotDeliveredLog($logs);
+                if ($trackingInfo['delivery_status'] !== $notDeliveredLog['Status']) {
+                    $responses = $this->otherNotfication($trackingId, $whatsapp, $email);
+                    Log::info(json_encode($responses, JSON_PRETTY_PRINT));
+                    $this->info(json_encode($responses, JSON_PRETTY_PRINT));
+                    $this->updateStatus($trackingId, $notDeliveredLog['Status']);
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error("❌ Error tracking AWB $trackingId: " . $e->getMessage());
+        }
     }
 
     private function getDataFromFirstFlightApi(array $payload): array
