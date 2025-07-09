@@ -92,43 +92,46 @@ class TrackShipments extends Command
 
         $payload["TrackingAWB"] = $trackingId;
 
-        try {
-            $data = $this->getDataFromFirstFlightApi($payload);
+        $responses = $this->otherNotfication($trackingId, $whatsapp, $email);
+        $this->info(json_encode($responses, JSON_PRETTY_PRINT));
 
-            if (empty($data['AirwayBillTrackList'][0]['TrackingLogDetails'])) {
-                Log::warning("⚠️ No logs found for AWB: $trackingId");
-                $this->updateStatus($trackingId, "GHOST");
-                return;
-            }
+        // try {
+        //     $data = $this->getDataFromFirstFlightApi($payload);
 
-            $logs = $data['AirwayBillTrackList'][0]['TrackingLogDetails'];
+        //     if (empty($data['AirwayBillTrackList'][0]['TrackingLogDetails'])) {
+        //         Log::warning("⚠️ No logs found for AWB: $trackingId");
+        //         $this->updateStatus($trackingId, "GHOST");
+        //         return;
+        //     }
 
-            if ($this->isDelivered($logs)) {
-                $deliveredLog = $this->getDeliveredLog($logs);
+        //     $logs = $data['AirwayBillTrackList'][0]['TrackingLogDetails'];
 
-                $deliveredTo = $deliveredLog['DeliveredTo'] ?? '';
+        //     if ($this->isDelivered($logs)) {
+        //         $deliveredLog = $this->getDeliveredLog($logs);
 
-                $deliveredAt = $this->parseDeliveredAt(
-                    $deliveredLog['ActivityDate'] ?? '',
-                    $deliveredLog['ActivityTime'] ?? ''
-                );
+        //         $deliveredTo = $deliveredLog['DeliveredTo'] ?? '';
 
-                $responses = $this->deliveredNotification($whatsapp, $email, $deliveredTo, $deliveredAt, $trackingId);
-                // Log::info(json_encode($responses, JSON_PRETTY_PRINT));
-                $this->info(json_encode($responses, JSON_PRETTY_PRINT));
-                $this->updateOrder($trackingId, $deliveredTo, $deliveredAt);
-            } else {
-                $notDeliveredLog = $this->getNotDeliveredLog($logs);
-                if ($trackingInfo['delivery_status'] !== $notDeliveredLog['Status']) {
-                    $responses = $this->otherNotfication($trackingId, $whatsapp, $email, $notDeliveredLog["Remarks"]);
-                    // Log::info(json_encode($responses, JSON_PRETTY_PRINT));
-                    $this->info(json_encode($responses, JSON_PRETTY_PRINT));
-                    $this->updateStatus($trackingId, $notDeliveredLog['Status']);
-                }
-            }
-        } catch (\Exception $e) {
-            Log::error("❌ Error tracking AWB $trackingId: " . $e->getMessage());
-        }
+        //         $deliveredAt = $this->parseDeliveredAt(
+        //             $deliveredLog['ActivityDate'] ?? '',
+        //             $deliveredLog['ActivityTime'] ?? ''
+        //         );
+
+        //         $responses = $this->deliveredNotification($whatsapp, $email, $deliveredTo, $deliveredAt, $trackingId);
+        //         Log::info(json_encode($responses, JSON_PRETTY_PRINT));
+        //         $this->info(json_encode($responses, JSON_PRETTY_PRINT));
+        //         $this->updateOrder($trackingId, $deliveredTo, $deliveredAt);
+        //     } else {
+        //         $notDeliveredLog = $this->getNotDeliveredLog($logs);
+        //         if ($trackingInfo['delivery_status'] !== $notDeliveredLog['Status']) {
+        //             $responses = $this->otherNotfication($trackingId, $whatsapp, $email, $notDeliveredLog["Remarks"]);
+        //             Log::info(json_encode($responses, JSON_PRETTY_PRINT));
+        //             $this->info(json_encode($responses, JSON_PRETTY_PRINT));
+        //             $this->updateStatus($trackingId, $notDeliveredLog['Status']);
+        //         }
+        //     }
+        // } catch (\Exception $e) {
+        //     Log::error("❌ Error tracking AWB $trackingId: " . $e->getMessage());
+        // }
     }
 
     private function getDataFromFirstFlightApi(array $payload): array
@@ -192,7 +195,7 @@ class TrackShipments extends Command
         return $this->sendNotification('delivered', $whatsapp, $email, $message, "Order Delivered", $trackingId);
     }
 
-    public function otherNotfication($trackingId, $whatsapp, $email, $remarks)
+    public function otherNotfication($trackingId, $whatsapp, $email)
     {
         $trackingUrl = "https://rozeskin.com/tracking/?tracking_id=$trackingId";
 
