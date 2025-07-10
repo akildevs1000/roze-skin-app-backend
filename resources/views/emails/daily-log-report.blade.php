@@ -2,9 +2,7 @@
 
 @foreach($logSummaries as $log)
     <h4>{{ $log['filename'] }}</h4>
-    <pre style="background-color:#f5f5f5;padding:10px;border-radius:5px;max-height:400px;overflow:auto;">
-        {{ \Illuminate\Support\Str::limit($log['content'], 5000) }}
-    </pre>
+    <pre style="background-color:#f5f5f5;padding:10px;border-radius:5px;max-height:400px;overflow:auto;">{{ \Illuminate\Support\Str::limit($log['content'], 5000) }}</pre>
     <hr>
 @endforeach
 

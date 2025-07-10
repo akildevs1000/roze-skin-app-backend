@@ -19,7 +19,7 @@ class DailyLogReport extends Mailable
 
     public function build()
     {
-        $email = $this->subject('📝 Daily Laravel Log Report - ' . now()->format('Y-m-d'))
+        $email = $this->subject('📝 Daily Log Report - ' . now()->format('Y-m-d'))
             ->view('emails.daily-log-report')
             ->with(['logSummaries' => $this->logSummaries]);
 
