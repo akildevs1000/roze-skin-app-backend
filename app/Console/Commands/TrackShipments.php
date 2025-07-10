@@ -41,7 +41,10 @@ class TrackShipments extends Command
         $responses = [];
 
         foreach ($trackingsInfo as $trackingInfo) {
-            $responses[] = $this->trackShipment($trackingInfo, $payload) ?? [];
+            $response = $this->trackShipment($trackingInfo, $payload);
+            if ($response) {
+                $responses[] = $response;
+            }
         }
 
         $this->info(json_encode($responses, JSON_PRETTY_PRINT));
