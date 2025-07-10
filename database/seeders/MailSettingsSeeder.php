@@ -11,13 +11,13 @@ class MailSettingsSeeder extends Seeder
     {
 
         $data = [
-            'mailer' => env("MAIL_MAILER", "smtp"),
-            'host' => env("MAIL_HOST", "sandbox.smtp.mailtrap.io"),
-            'port' => env("MAIL_PORT", "5555"),
+            'mailer' => env("MAIL_MAILER"),
+            'host' => env("MAIL_HOST"),
+            'port' => env("MAIL_PORT"),
             'username' => env("MAIL_USERNAME"),
             'password' => env("MAIL_PASSWORD"),
-            'encryption' => env("MAIL_ENCRYPTION", "tls"),
-            'from_address' => env("MAIL_FROM_ADDRESS", "akildevs1000@gmail.com"),
+            'encryption' => env("MAIL_ENCRYPTION"),
+            'from_address' => env("MAIL_FROM_ADDRESS"),
             'from_name' => env("MAIL_FROM_NAME", config('app.name')),
         ];
 
