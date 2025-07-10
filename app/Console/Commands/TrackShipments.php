@@ -15,13 +15,20 @@ use Illuminate\Support\Facades\Mail;
 
 class TrackShipments extends Command
 {
-    protected $signature = 'track:shipments';
+    protected $signature = 'track:shipments {noNotification?}';
     protected $description = 'Track multiple shipments and log the responses';
+    protected $noNotification = false;
 
     protected $counter = 0;
 
     public function handle()
     {
+        if ($this->argument("noNotification")) {
+            $this->noNotification = true;
+        }
+
+        $this->info(!$this->noNotification ? "nofication sent" : "nofication disabled");
+
         $payload = [
             "UserName"   => env("FIRST_FLIGHT_USER"),
             "Password"   => env("FIRST_FLIGHT_PASS"),
@@ -40,7 +47,27 @@ class TrackShipments extends Command
 
         $responses = [];
 
-        foreach ($trackingsInfo as $trackingInfo) {
+        foreach ($trackingsInfo as $item) {
+
+            $trackingInfo = [
+
+                "tracking_number" => $item['tracking_number'],
+                "full_name" => $item['customer']["full_name"] ?? null,
+                "delivery_status" => $item['delivery_status'],
+
+                "whatsapp" => $item['customer']["whatsapp"] ?? null,
+                "email" => $item['customer']["email"] ?? null,
+
+
+            ];
+
+            if ($this->noNotification) {
+                $trackingInfo["whatsapp"] = "971554501483";
+                $trackingInfo["email"] = "francisgill1000@gmail.com";
+            }
+
+            $this->info(json_encode($trackingInfo, JSON_PRETTY_PRINT));
+
             $response = $this->trackShipment($trackingInfo, $payload);
             if ($response) {
                 $responses[] = $response;
@@ -52,6 +79,7 @@ class TrackShipments extends Command
             Log::channel('track_shipments')->info(json_encode($responses, JSON_PRETTY_PRINT));
         }
 
+
         $this->info("✅ Tracking command completed. Check laravel.log for details. {$this->counter} tracking records processed");
         Log::channel('track_shipments')->info("✅ Tracking command completed. Check laravel.log for details. {$this->counter} tracking records processed");
     }
@@ -59,15 +87,13 @@ class TrackShipments extends Command
     private function trackShipment($trackingInfo, array $payload)
     {
         $trackingId = $trackingInfo['tracking_number'];
-        $full_name = $trackingInfo['customer']["full_name"] ?? null;
-        $whatsapp = $trackingInfo['customer']["whatsapp"] ?? null;
-        $email = $trackingInfo['customer']["email"] ?? null;
+        $full_name = $trackingInfo["full_name"] ?? null;
+        $whatsapp = $trackingInfo["whatsapp"] ?? null;
+        $email = $trackingInfo["email"] ?? null;
+        $delivery_status = $trackingInfo['delivery_status'];
         $payload["TrackingAWB"] = $trackingId;
 
-        // Testing Only
-        // $whatsapp =  "971554501483";
-        // $email =  "francisgill1000@gmail.com";
-        $isDispatch = true;
+
 
         try {
             $data = $this->getDataFromFirstFlightApi($payload);
@@ -89,13 +115,13 @@ class TrackShipments extends Command
                     $deliveredLog['ActivityTime'] ?? ''
                 );
 
-                return $this->deliveredNotification($whatsapp, $email, $deliveredTo, $deliveredAt, $trackingId, $full_name, $isDispatch);
+                return $this->deliveredNotification($whatsapp, $email, $deliveredTo, $deliveredAt, $trackingId, $full_name);
             } else {
 
                 $notDeliveredLog = $this->getNotDeliveredLog($logs);
 
-                if ($trackingInfo['delivery_status'] !== $notDeliveredLog['Status']) {
-                    return $this->otherNotfication($trackingId, $whatsapp, $email, $full_name, $notDeliveredLog['Status'], $isDispatch);
+                if ($delivery_status !== $notDeliveredLog['Status']) {
+                    return $this->otherNotfication($trackingId, $whatsapp, $email, $full_name, $notDeliveredLog['Status']);
                 }
             }
         } catch (\Exception $e) {
@@ -137,7 +163,7 @@ class TrackShipments extends Command
         }
     }
 
-    public function deliveredNotification($whatsapp, $email, $deliveredTo, $deliveredAt, $trackingId, $full_name, $isDispatch = true)
+    public function deliveredNotification($whatsapp, $email, $deliveredTo, $deliveredAt, $trackingId, $full_name)
     {
         $formattedDate = date('F j, Y \a\t h:i A', strtotime($deliveredAt));
 
@@ -158,7 +184,7 @@ class TrackShipments extends Command
             ];
 
             try {
-                if ($trackingId && $isDispatch) {
+                if ($trackingId && !$this->noNotification) {
                     WhastappSender::dispatch($whatsappPayload);
                 }
                 $responses[] = ["whatsapp" => $whatsappPayload];
@@ -176,7 +202,7 @@ class TrackShipments extends Command
             ];
 
             try {
-                if ($trackingId && $isDispatch) {
+                if ($trackingId && !$this->noNotification) {
                     Mail::to($email)->queue(new TestMarkdownMail($trackingId, $full_name));
                 }
                 $responses[] = ["email" => $emailPayload];
@@ -200,7 +226,7 @@ class TrackShipments extends Command
         return $responses;
     }
 
-    public function otherNotfication($trackingId, $whatsapp, $email, $full_name, $status, $isDispatch = true)
+    public function otherNotfication($trackingId, $whatsapp, $email, $full_name, $status)
     {
         $responses = [];
         $whatsappSuccess = true;
@@ -217,7 +243,7 @@ class TrackShipments extends Command
             ];
 
             try {
-                if ($trackingId && $isDispatch) {
+                if ($trackingId && !$this->noNotification) {
                     WhastappSender::dispatch($whatsappPayload);
                 }
                 $responses[] = ["whatsapp" => $whatsappPayload];
@@ -236,7 +262,7 @@ class TrackShipments extends Command
             ];
 
             try {
-                if ($trackingId && $isDispatch) {
+                if ($trackingId && !$this->noNotification) {
                     Mail::to($email)->queue(new TestMarkdownMail($trackingId, $full_name));
                 }
                 $responses[] = ["email" => $emailPayload];
