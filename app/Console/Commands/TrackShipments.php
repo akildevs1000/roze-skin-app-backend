@@ -59,9 +59,9 @@ class TrackShipments extends Command
         $payload["TrackingAWB"] = $trackingId;
 
         // Testing Only
-        $whatsapp =  "971554501483";
-        $email =  "francisgill1000@gmail.com";
-        $isDispatch = false;
+        // $whatsapp =  "971554501483";
+        // $email =  "francisgill1000@gmail.com";
+        $isDispatch = true;
 
         try {
             $data = $this->getDataFromFirstFlightApi($payload);
@@ -249,8 +249,6 @@ class TrackShipments extends Command
 
         return $responses;
     }
-
-
 
     function getClient()
     {
