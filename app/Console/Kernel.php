@@ -2,12 +2,8 @@
 
 namespace App\Console;
 
-use App\Mail\ReportNotificationMail;
-use App\Models\Company;
-use App\Models\ReportNotification;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
-use Illuminate\Support\Facades\Mail;
 
 class Kernel extends ConsoleKernel
 {
