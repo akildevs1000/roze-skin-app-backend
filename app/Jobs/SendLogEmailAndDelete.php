@@ -30,10 +30,10 @@ class SendLogEmailAndDelete implements ShouldQueue
         Mail::to($this->emails)->send(new DailyLogReport($this->logSummaries));
 
         // Delete log files
-        foreach ($this->files as $file) {
-            if (file_exists($file)) {
-                unlink($file);
-            }
-        }
+        // foreach ($this->files as $file) {
+        //     if (file_exists($file)) {
+        //         unlink($file);
+        //     }
+        // }
     }
 }
