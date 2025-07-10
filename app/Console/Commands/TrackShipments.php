@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\SendEmail;
 use App\Jobs\WhastappSender;
 use App\Mail\TestMarkdownMail;
 use App\Models\Order;
@@ -11,7 +10,6 @@ use App\Models\WhatsappClient;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 
@@ -24,25 +22,6 @@ class TrackShipments extends Command
 
     public function handle()
     {
-
-        // $emailPayload = [
-        //     'recipient' => "francisgill1000@gmail.com",
-        //     'text' => "If you're seeing this, SMTP from Live is working!",
-        //     'subject' => "Test Email from Live via Gmail"
-        // ];
-
-        // SendEmail::dispatch($emailPayload);
-
-        // $whatsappPayload = [
-        //     'recipient' => "971554501483",
-        //     'text' => "If you're seeing this, Whatsapp is working!", // ✅ Use the full message, not just the link
-        //     'clientId' => $this->getClient(),
-        // ];
-
-        // WhastappSender::dispatch($whatsappPayload);
-
-        // return;
-
         $payload = [
             "UserName"   => env("FIRST_FLIGHT_USER"),
             "Password"   => env("FIRST_FLIGHT_PASS"),
@@ -59,13 +38,16 @@ class TrackShipments extends Command
             return;
         }
 
+        $responses = [];
+
         foreach ($trackingsInfo as $trackingInfo) {
-            $this->trackShipment($trackingInfo, $payload);
+            $responses[] = $this->trackShipment($trackingInfo, $payload);
         }
 
-        Log::warning("✅ Tracking command completed. Check laravel.log for details. {$this->counter} tracking records processed");
-
+        $this->info(json_encode($responses, JSON_PRETTY_PRINT));
         $this->info("✅ Tracking command completed. Check laravel.log for details. {$this->counter} tracking records processed");
+        Log::info(json_encode($responses, JSON_PRETTY_PRINT));
+        Log::info("✅ Tracking command completed. Check laravel.log for details. {$this->counter} tracking records processed");
     }
 
     private function getTrackingsInfo(): array
@@ -73,7 +55,7 @@ class TrackShipments extends Command
         return Order::where("tracking_number", ">", 0)
             ->whereNotNull("tracking_number")
             ->where("tracking_number", 5100308838) // FOR TESTING ONLY
-            ->where('delivery_status', '!=', 'POD')
+            // ->where('delivery_status', '!=', 'POD')
             // ->where('delivery_status', '!=', 'GHOST')
             ->with(["customer" => function ($query) {
                 $query->select("id", "first_name", "last_name", "email", "phone", "whatsapp");
@@ -83,7 +65,7 @@ class TrackShipments extends Command
             ->toArray();
     }
 
-    private function trackShipment($trackingInfo, array $payload): void
+    private function trackShipment($trackingInfo, array $payload)
     {
         $trackingId = $trackingInfo['tracking_number'];
         $full_name = $trackingInfo['customer']["full_name"] ?? null;
@@ -92,22 +74,16 @@ class TrackShipments extends Command
         $payload["TrackingAWB"] = $trackingId;
 
         // Testing Only
-
-        // $whatsapp =  "971554501483";
-        // $email =  "francisgill1000@gmail.com";
-        // $responses = $this->otherNotfication($trackingId, $whatsapp, $email, $full_name);
-        // $this->info(json_encode($responses, JSON_PRETTY_PRINT));
-        // return;
-
-        // Testing Only End
+        $whatsapp =  "971554501483";
+        $email =  "francisgill1000@gmail.com";
+        $isDispatch = false;
 
         try {
             $data = $this->getDataFromFirstFlightApi($payload);
 
             if (empty($data['AirwayBillTrackList'][0]['TrackingLogDetails'])) {
-                Log::warning("⚠️ No logs found for AWB: $trackingId");
                 // $this->updateStatus($trackingId, "GHOST");
-                return;
+                return ["⚠️ No logs found for AWB: $trackingId"];
             }
 
             $logs = $data['AirwayBillTrackList'][0]['TrackingLogDetails'];
@@ -122,21 +98,17 @@ class TrackShipments extends Command
                     $deliveredLog['ActivityTime'] ?? ''
                 );
 
-                $responses = $this->deliveredNotification($whatsapp, $email, $deliveredTo, $deliveredAt, $trackingId, $full_name);
-                Log::info(json_encode($responses, JSON_PRETTY_PRINT));
-                $this->info(json_encode($responses, JSON_PRETTY_PRINT));
-                $this->updateOrder($trackingId, $deliveredTo, $deliveredAt);
+                return $this->deliveredNotification($whatsapp, $email, $deliveredTo, $deliveredAt, $trackingId, $full_name, $isDispatch);
             } else {
+
                 $notDeliveredLog = $this->getNotDeliveredLog($logs);
+
                 if ($trackingInfo['delivery_status'] !== $notDeliveredLog['Status']) {
-                    $responses = $this->otherNotfication($trackingId, $whatsapp, $email, $full_name);
-                    Log::info(json_encode($responses, JSON_PRETTY_PRINT));
-                    $this->info(json_encode($responses, JSON_PRETTY_PRINT));
-                    $this->updateStatus($trackingId, $notDeliveredLog['Status']);
+                    return $this->otherNotfication($trackingId, $whatsapp, $email, $full_name, $notDeliveredLog['Status'], $isDispatch);
                 }
             }
         } catch (\Exception $e) {
-            Log::error("❌ Error tracking AWB $trackingId: " . $e->getMessage());
+            return ["❌ Error tracking AWB $trackingId: " . $e->getMessage()];
         }
     }
 
@@ -165,7 +137,6 @@ class TrackShipments extends Command
         });
     }
 
-
     private function parseDeliveredAt(string $date, string $time): ?Carbon
     {
         try {
@@ -175,56 +146,12 @@ class TrackShipments extends Command
         }
     }
 
-    private function updateOrder(string $trackingId, string $deliveredTo, ?Carbon $deliveredAt): void
-    {
-        $payload = [
-            'delivery_status' => "POD",
-            'delivered_to'    => $deliveredTo,
-            'delivered_at'    => $deliveredAt ?? now(),
-        ];
-        Order::where('tracking_number', $trackingId)->update($payload);
-        $this->counter++;
-    }
-
-    private function updateStatus(string $trackingId, $status): void
-    {
-        Order::where('tracking_number', $trackingId)->update(['delivery_status' => $status]);
-        $this->counter++;
-    }
-
-    public function deliveredNotification($whatsapp, $email, $deliveredTo, $deliveredAt, $trackingId, $full_name)
+    public function deliveredNotification($whatsapp, $email, $deliveredTo, $deliveredAt, $trackingId, $full_name, $isDispatch = true)
     {
         $formattedDate = date('F j, Y \a\t h:i A', strtotime($deliveredAt));
 
         $message = "Dear $full_name,\n\nYour shipment has been successfully delivered to *$deliveredTo* on *$formattedDate*.\n\nThank you for choosing our service.";
 
-        return $this->sendNotification('delivered', $whatsapp, $email, $message, "Order Delivered", $trackingId, $full_name);
-    }
-
-    public function otherNotfication($trackingId, $whatsapp, $email, $full_name)
-    {
-        $trackingUrl = "https://rozeskin.com/tracking/?tracking_id=$trackingId";
-
-        $message = "Dear $full_name,\n\n";
-        $message .= "The status of your shipment has been updated.\n\n";
-        $message .= "You can track your order using the link below:\n";
-        $message .= "$trackingUrl\n\n";
-        $message .= "Thank you for shopping with Roze Skincare!";
-
-        return $this->sendNotification(
-            'status',
-            $whatsapp,
-            $email,
-            $message,
-            "Shipment Status Update",
-            $trackingId,
-            $full_name
-        );
-    }
-
-
-    public function sendNotification($type, $whatsapp, $email, $message, $subject = null, $trackingId, $full_name)
-    {
         $responses = [];
 
         $normalizePhoneNumber = (new Controller)->normalizePhoneNumber($whatsapp);
@@ -232,11 +159,14 @@ class TrackShipments extends Command
         if ($normalizePhoneNumber) {
             $whatsappPayload = [
                 'recipient' => $normalizePhoneNumber,
-                'text' => $message, // ✅ Use the full message, not just the link
+                'text' => $message,
                 'clientId' => $this->getClient(),
             ];
 
-            WhastappSender::dispatch($whatsappPayload);
+            if ($trackingId && $isDispatch) {
+                WhastappSender::dispatch($whatsappPayload);
+            }
+
 
             $responses[] = ["whatsapp" => $whatsappPayload];
         }
@@ -245,14 +175,63 @@ class TrackShipments extends Command
             $emailPayload = [
                 'recipient' => $email,
                 'text' => $message,
-                'subject' => "Order Status Update",
+                'subject' => "Shipment Status Update",
             ];
 
-            if ($trackingId) {
-                Mail::to($email)->queue(new TestMarkdownMail($trackingId,$full_name));
+            if ($trackingId && $isDispatch) {
+                Mail::to($email)->queue(new TestMarkdownMail($trackingId, $full_name));
             }
             $responses[] = ["email" => $emailPayload];
         }
+
+        Order::where('tracking_number', $trackingId)->update([
+            'delivery_status' => "POD",
+            'delivered_to'    => $deliveredTo,
+            'delivered_at'    => $deliveredAt ?? now(),
+        ]);
+
+        $this->counter++;
+
+        return $responses;
+    }
+
+    public function otherNotfication($trackingId, $whatsapp, $email, $full_name, $status, $isDispatch = true)
+    {
+        $responses = [];
+
+        $normalizePhoneNumber = (new Controller)->normalizePhoneNumber($whatsapp);
+
+        if ($normalizePhoneNumber) {
+            $whatsappPayload = [
+                'recipient' => $normalizePhoneNumber,
+                'text' => $this->prepareMessage($trackingId, $full_name),
+                'clientId' => $this->getClient(),
+            ];
+
+            if ($trackingId && $isDispatch) {
+                WhastappSender::dispatch($whatsappPayload);
+            }
+
+
+            $responses[] = ["whatsapp" => $whatsappPayload];
+        }
+
+        if ($email) {
+            $emailPayload = [
+                'recipient' => $email,
+                'text' => $this->prepareMessage($trackingId, $full_name),
+                'subject' => "Shipment Status Update",
+            ];
+
+            if ($trackingId && $isDispatch) {
+                Mail::to($email)->queue(new TestMarkdownMail($trackingId, $full_name));
+            }
+            $responses[] = ["email" => $emailPayload];
+        }
+
+        Order::where('tracking_number', $trackingId)->update(['delivery_status' => $status]);
+
+        $this->counter++;
 
         return $responses;
     }
@@ -262,5 +241,18 @@ class TrackShipments extends Command
     {
         $clientId = WhatsappClient::value("accounts")[0]["clientId"] ?? "test";
         return $clientId;
+    }
+
+    function prepareMessage($trackingId, $full_name)
+    {
+        $trackingUrl = "https://rozeskin.com/tracking/?tracking_id=$trackingId";
+
+        $message = "Dear $full_name,\n\n";
+        $message .= "The status of your shipment has been updated.\n\n";
+        $message .= "You can track your order using the link below:\n";
+        $message .= "$trackingUrl\n\n";
+        $message .= "Thank you for shopping with Roze Skincare!";
+
+        return $message;
     }
 }
