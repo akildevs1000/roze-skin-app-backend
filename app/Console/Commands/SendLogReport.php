@@ -32,7 +32,7 @@ class SendLogReport extends Command
         }
 
         Mail::to("francisgill1000@gmail.com")
-            ->send(new DailyLogReport($logSummaries));
+            ->queue(new DailyLogReport($logSummaries));
 
         $this->info('✅ Daily log report sent.');
     }
