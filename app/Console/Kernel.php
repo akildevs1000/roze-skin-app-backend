@@ -11,8 +11,11 @@ class Kernel extends ConsoleKernel
     {
         $schedule
             ->command('track:shipment')
-            ->hourly()
-            ->emailOutputOnFailure(env("ADMIN_MAIL_RECEIVERS"));
+            ->hourly();
+
+        $schedule
+            ->command('cron:check')
+            ->everyMinute();
     }
 
     protected function commands()
