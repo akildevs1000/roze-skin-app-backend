@@ -196,6 +196,7 @@ return [
         App\Providers\RouteServiceProvider::class,
 
         TechTailor\RPG\RPGServiceProvider::class,
+        App\Providers\MailConfigServiceProvider::class,
     ],
 
     /*
