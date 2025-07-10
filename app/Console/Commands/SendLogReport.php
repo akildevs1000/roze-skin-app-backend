@@ -2,9 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Jobs\SendLogEmailAndDelete;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\DailyLogReport;
 
 class SendLogReport extends Command
 {
@@ -31,9 +30,9 @@ class SendLogReport extends Command
             return;
         }
 
-        Mail::to("francisgill1000@gmail.com")
-            ->queue(new DailyLogReport($logSummaries));
+        // Dispatch queued job
+        SendLogEmailAndDelete::dispatch($logSummaries, "francisgill1000@gmail.com", $files);
 
-        $this->info('✅ Daily log report sent.');
+        $this->info('✅ Log email job dispatched. Logs will be deleted after successful email.');
     }
 }
