@@ -50,8 +50,6 @@ class TrackShipments extends Command
         Log::info("✅ Tracking command completed. Check laravel.log for details. {$this->counter} tracking records processed");
     }
 
-
-
     private function trackShipment($trackingInfo, array $payload)
     {
         $trackingId = $trackingInfo['tracking_number'];
@@ -139,6 +137,9 @@ class TrackShipments extends Command
 
         $message = "Dear $full_name,\n\nYour shipment has been successfully delivered to *$deliveredTo* on *$formattedDate*.\n\nThank you for choosing our service.";
 
+        $whatsappSuccess = true;
+        $emailSuccess = true;
+
         $responses = [];
 
         $normalizePhoneNumber = (new Controller)->normalizePhoneNumber($whatsapp);
@@ -150,12 +151,15 @@ class TrackShipments extends Command
                 'clientId' => $this->getClient(),
             ];
 
-            if ($trackingId && $isDispatch) {
-                WhastappSender::dispatch($whatsappPayload);
+            try {
+                if ($trackingId && $isDispatch) {
+                    WhastappSender::dispatch($whatsappPayload);
+                }
+                $responses[] = ["whatsapp" => $whatsappPayload];
+            } catch (\Exception $e) {
+                $whatsappSuccess = false;
+                $responses[] = ["whatsapp" => "WhatsApp notification failed: " . $e->getMessage()];
             }
-
-
-            $responses[] = ["whatsapp" => $whatsappPayload];
         }
 
         if ($email) {
@@ -165,17 +169,25 @@ class TrackShipments extends Command
                 'subject' => "Shipment Status Update",
             ];
 
-            if ($trackingId && $isDispatch) {
-                Mail::to($email)->queue(new TestMarkdownMail($trackingId, $full_name));
+            try {
+                if ($trackingId && $isDispatch) {
+                    Mail::to($email)->queue(new TestMarkdownMail($trackingId, $full_name));
+                }
+                $responses[] = ["email" => $emailPayload];
+            } catch (\Exception $e) {
+                $emailSuccess = false;
+                $responses[] = ["email" => "Email notification failed: " . $e->getMessage()];
             }
-            $responses[] = ["email" => $emailPayload];
         }
 
-        Order::where('tracking_number', $trackingId)->update([
-            'delivery_status' => "POD",
-            'delivered_to'    => $deliveredTo,
-            'delivered_at'    => $deliveredAt ?? now(),
-        ]);
+        // Only update status if both notifications succeeded
+        if ($whatsappSuccess && $emailSuccess) {
+            Order::where('tracking_number', $trackingId)->update([
+                'delivery_status' => "POD",
+                'delivered_to'    => $deliveredTo,
+                'delivered_at'    => $deliveredAt ?? now(),
+            ]);
+        }
 
         $this->counter++;
 
@@ -185,9 +197,12 @@ class TrackShipments extends Command
     public function otherNotfication($trackingId, $whatsapp, $email, $full_name, $status, $isDispatch = true)
     {
         $responses = [];
+        $whatsappSuccess = true;
+        $emailSuccess = true;
 
         $normalizePhoneNumber = (new Controller)->normalizePhoneNumber($whatsapp);
 
+        // Handle WhatsApp
         if ($normalizePhoneNumber) {
             $whatsappPayload = [
                 'recipient' => $normalizePhoneNumber,
@@ -195,14 +210,18 @@ class TrackShipments extends Command
                 'clientId' => $this->getClient(),
             ];
 
-            if ($trackingId && $isDispatch) {
-                WhastappSender::dispatch($whatsappPayload);
+            try {
+                if ($trackingId && $isDispatch) {
+                    WhastappSender::dispatch($whatsappPayload);
+                }
+                $responses[] = ["whatsapp" => $whatsappPayload];
+            } catch (\Exception $e) {
+                $whatsappSuccess = false;
+                $responses[] = ["whatsapp" => "WhatsApp notification failed: " . $e->getMessage()];
             }
-
-
-            $responses[] = ["whatsapp" => $whatsappPayload];
         }
 
+        // Handle Email
         if ($email) {
             $emailPayload = [
                 'recipient' => $email,
@@ -210,18 +229,27 @@ class TrackShipments extends Command
                 'subject' => "Shipment Status Update",
             ];
 
-            if ($trackingId && $isDispatch) {
-                Mail::to($email)->queue(new TestMarkdownMail($trackingId, $full_name));
+            try {
+                if ($trackingId && $isDispatch) {
+                    Mail::to($email)->queue(new TestMarkdownMail($trackingId, $full_name));
+                }
+                $responses[] = ["email" => $emailPayload];
+            } catch (\Exception $e) {
+                $emailSuccess = false;
+                $responses[] = ["email" => "Email notification failed: " . $e->getMessage()];
             }
-            $responses[] = ["email" => $emailPayload];
         }
 
-        Order::where('tracking_number', $trackingId)->update(['delivery_status' => $status]);
+        // Only update status if both notifications succeeded
+        if ($whatsappSuccess && $emailSuccess) {
+            Order::where('tracking_number', $trackingId)->update(['delivery_status' => $status]);
+        }
 
         $this->counter++;
 
         return $responses;
     }
+
 
 
     function getClient()
