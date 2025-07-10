@@ -63,6 +63,8 @@ class TrackShipments extends Command
             $this->trackShipment($trackingInfo, $payload);
         }
 
+        Log::warning("✅ Tracking command completed. Check laravel.log for details. {$this->counter} tracking records processed");
+
         $this->info("✅ Tracking command completed. Check laravel.log for details. {$this->counter} tracking records processed");
     }
 
