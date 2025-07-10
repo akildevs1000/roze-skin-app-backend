@@ -47,9 +47,12 @@ class TrackShipments extends Command
             }
         }
 
-        $this->info(json_encode($responses, JSON_PRETTY_PRINT));
+        if ($this->counter) {
+            $this->info(json_encode($responses, JSON_PRETTY_PRINT));
+            Log::info(json_encode($responses, JSON_PRETTY_PRINT));
+        }
+
         $this->info("✅ Tracking command completed. Check laravel.log for details. {$this->counter} tracking records processed");
-        Log::info(json_encode($responses, JSON_PRETTY_PRINT));
         Log::info("✅ Tracking command completed. Check laravel.log for details. {$this->counter} tracking records processed");
     }
 
