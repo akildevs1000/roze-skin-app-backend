@@ -9,15 +9,16 @@ class MailSettingsSeeder extends Seeder
 {
     public function run()
     {
+
         $data = [
-            'mailer' => 'smtp',
-            'host' => 'sandbox.smtp.mailtrap.io',
-            'port' => 2525,
-            'username' => '1e553e26b5d8f1',
-            'password' => '65fe1478f5fd62',
-            'encryption' => 'ssl',
-            'from_address' => 'akildevs1000@gmail.com',
-            'from_name' => config('app.name'),
+            'mailer' => env("MAIL_MAILER", "smtp"),
+            'host' => env("MAIL_HOST", "sandbox.smtp.mailtrap.io"),
+            'port' => env("MAIL_PORT", "5555"),
+            'username' => env("MAIL_USERNAME"),
+            'password' => env("MAIL_PASSWORD"),
+            'encryption' => env("MAIL_ENCRYPTION", "tls"),
+            'from_address' => env("MAIL_FROM_ADDRESS", "akildevs1000@gmail.com"),
+            'from_name' => env("MAIL_FROM_NAME", config('app.name')),
         ];
 
         // Update existing record or create new one
