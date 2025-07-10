@@ -80,7 +80,7 @@ class TrackShipments extends Command
         }
 
 
-        $this->info("✅ Tracking command completed. Check laravel.log for details. {$this->counter} tracking records processed");
+        $this->info("✅ Tracking command completed. {$this->counter} records processed");
         Log::channel('track_shipments')->info("✅ Tracking command completed. Check laravel.log for details. {$this->counter} tracking records processed");
     }
 
