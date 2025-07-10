@@ -21,7 +21,7 @@ class Kernel extends ConsoleKernel
     {
         $schedule
             ->command('track:shipment')
-            ->everyFiveMinutes()
+            ->hourly()
             ->emailOutputOnFailure(env("ADMIN_MAIL_RECEIVERS"));
 
         $schedule
