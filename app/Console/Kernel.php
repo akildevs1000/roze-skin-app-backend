@@ -15,7 +15,7 @@ class Kernel extends ConsoleKernel
 
         $schedule
             ->command('cron:check')
-            ->everyMinute();
+            ->hourly();
 
         $schedule->command('logs:email-report')->dailyAt('08:00');
     }
