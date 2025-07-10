@@ -51,6 +51,11 @@ return [
     */
 
     'channels' => [
+        'track_shipments' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/track_shipments.log'),
+            'level' => 'info',
+        ],
         'stack' => [
             'driver' => 'stack',
             'channels' => ['single'],
