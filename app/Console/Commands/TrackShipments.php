@@ -50,20 +50,7 @@ class TrackShipments extends Command
         Log::info("✅ Tracking command completed. Check laravel.log for details. {$this->counter} tracking records processed");
     }
 
-    private function getTrackingsInfo(): array
-    {
-        return Order::where("tracking_number", ">", 0)
-            ->whereNotNull("tracking_number")
-            ->where("tracking_number", 5100308838) // FOR TESTING ONLY
-            // ->where('delivery_status', '!=', 'POD')
-            // ->where('delivery_status', '!=', 'GHOST')
-            ->with(["customer" => function ($query) {
-                $query->select("id", "first_name", "last_name", "email", "phone", "whatsapp");
-                $query->withOut("shipping_address", "billing_address");
-            }])
-            ->get(["id", "customer_id", "tracking_number", "delivery_status"])
-            ->toArray();
-    }
+
 
     private function trackShipment($trackingInfo, array $payload)
     {
@@ -254,5 +241,20 @@ class TrackShipments extends Command
         $message .= "Thank you for shopping with Roze Skincare!";
 
         return $message;
+    }
+
+    private function getTrackingsInfo(): array
+    {
+        return Order::where("tracking_number", ">", 0)
+            ->whereNotNull("tracking_number")
+            ->where("tracking_number", 5100308838) // FOR TESTING ONLY
+            // ->where('delivery_status', '!=', 'POD')
+            // ->where('delivery_status', '!=', 'GHOST')
+            ->with(["customer" => function ($query) {
+                $query->select("id", "first_name", "last_name", "email", "phone", "whatsapp");
+                $query->withOut("shipping_address", "billing_address");
+            }])
+            ->get(["id", "customer_id", "tracking_number", "delivery_status"])
+            ->toArray();
     }
 }
