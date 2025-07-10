@@ -16,6 +16,8 @@ class Kernel extends ConsoleKernel
         $schedule
             ->command('cron:check')
             ->everyMinute();
+
+        $schedule->command('logs:email-report')->dailyAt('08:00');
     }
 
     protected function commands()
