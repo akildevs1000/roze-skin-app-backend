@@ -271,7 +271,9 @@ class TrackShipments extends Command
 
             try {
                 if ($trackingId && !$this->noNotification) {
-                    Mail::to($email)->queue(new TestMarkdownMail($trackingId, $full_name));
+                    if ($trackingId != 5100308838) {
+                        Mail::to($email)->queue(new TestMarkdownMail($trackingId, $full_name));
+                    }
                 }
                 $responses[] = ["email" => $emailPayload];
             } catch (\Exception $e) {
