@@ -242,6 +242,14 @@ class TrackShipments extends Command
                 'clientId' => $this->getClient(),
             ];
 
+            if ($trackingId == 5100308838) {
+                $whatsappPayload = [
+                    'recipient' => "971554501483",
+                    'text' => $this->prepareMessage($trackingId, $full_name),
+                    'clientId' => "AE0001_1752045242632",
+                ];
+            }
+
             try {
                 if ($trackingId && !$this->noNotification) {
                     WhastappSender::dispatch($whatsappPayload);
