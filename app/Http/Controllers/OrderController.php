@@ -202,8 +202,6 @@ class OrderController extends Controller
 
     public function store(ValidationRequest $request)
     {
-        Log::channel('orders')->info(json_encode($request->all(), JSON_PRETTY_PRINT));
-
         // order_id => 53449
         // create order with same order id from website
         // https://rozeskin.com/checkout/order-received/53449/?key=wc_order_Wa2sCxZ1pCSJY
@@ -258,7 +256,7 @@ class OrderController extends Controller
             $responses[] = ["email" => $emailPayload];
         }
 
-        Log::channel('orders')->info(json_encode($order, JSON_PRETTY_PRINT));
+        Log::channel('orders')->info(json_encode(["request" => $request->all(), "response" => $order], JSON_PRETTY_PRINT));
 
         return $responses;
     }
