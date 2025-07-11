@@ -51,6 +51,11 @@ return [
     */
 
     'channels' => [
+        'orders' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/orders.log'),
+            'level' => 'info',
+        ],
         'croncheck' => [
             'driver' => 'single',
             'path' => storage_path('logs/croncheck.log'),

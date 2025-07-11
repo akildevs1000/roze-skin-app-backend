@@ -15,6 +15,7 @@ use App\Models\WhatsappClient;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
 {
@@ -201,6 +202,7 @@ class OrderController extends Controller
 
     public function store(ValidationRequest $request)
     {
+        Log::channel('orders')->info(json_encode($request->all(), JSON_PRETTY_PRINT));
 
         // order_id => 53449
         // create order with same order id from website
@@ -255,6 +257,8 @@ class OrderController extends Controller
 
             $responses[] = ["email" => $emailPayload];
         }
+
+        Log::channel('orders')->info(json_encode($order, JSON_PRETTY_PRINT));
 
         return $responses;
     }
