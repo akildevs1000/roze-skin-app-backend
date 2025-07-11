@@ -11,11 +11,11 @@ class Kernel extends ConsoleKernel
     {
         $schedule
             ->command('track:shipments')
-            ->hourly();
+            ->everyFifteenMinutes();
 
-        $schedule
-            ->command('cron:check')
-            ->hourly();
+        // $schedule
+        //     ->command('cron:check')
+        //     ->hourly();
 
         $schedule->command('logs:email-report')->dailyAt('08:00');
     }
