@@ -305,8 +305,8 @@ class TrackShipments extends Command
     {
         return Order::where("tracking_number", ">", 0)
             ->whereNotNull("tracking_number")
-            ->where("tracking_number", 5100308838) // FOR TESTING ONLY
-            // ->where('delivery_status', '!=', 'POD')
+            // ->where("tracking_number", 5100308838) // FOR TESTING ONLY
+            ->where('delivery_status', '!=', 'POD')
             // ->where('delivery_status', '!=', 'GHOST')
             ->with(["customer" => function ($query) {
                 $query->select("id", "first_name", "last_name", "email", "phone", "whatsapp");
