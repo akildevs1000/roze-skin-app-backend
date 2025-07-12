@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\WhastappSender;
+use App\Mail\DeliveredOrderMarkdownMail;
 use App\Mail\TestMarkdownMail;
 use App\Models\Order;
 use App\Models\WhatsappClient;
@@ -202,7 +203,7 @@ class TrackShipments extends Command
             ];
 
             try {
-                Mail::to($email)->queue(new TestMarkdownMail($trackingId, $full_name));
+                Mail::to($email)->queue(new DeliveredOrderMarkdownMail($full_name, $message));
                 $responses[] = ["email" => $emailPayload];
             } catch (\Exception $e) {
                 $emailSuccess = false;
