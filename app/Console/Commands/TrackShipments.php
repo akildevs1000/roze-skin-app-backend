@@ -172,7 +172,7 @@ class TrackShipments extends Command
             ];
 
             try {
-                // WhastappSender::dispatch($whatsappPayload);
+                WhastappSender::dispatch($whatsappPayload);
                 $responses[] = ["whatsapp" => $whatsappPayload];
             } catch (\Exception $e) {
                 $whatsappSuccess = false;
@@ -186,31 +186,29 @@ class TrackShipments extends Command
             ];
 
             try {
-                if ($trackingId == 5100308838) {
-                    WhastappSender::dispatch($whatsappPayload2);
-                    $responses[] = ["whatsapp2" => $whatsappPayload2];
-                }
+                WhastappSender::dispatch($whatsappPayload2);
+                $responses[] = ["whatsapp2" => $whatsappPayload2];
             } catch (\Exception $e) {
                 $whatsappSuccess = false;
                 $responses[] = ["whatsapp" => "WhatsApp notification failed: " . $e->getMessage()];
             }
         }
 
-        // if ($email) {
-        //     $emailPayload = [
-        //         'recipient' => $email,
-        //         'text' => $message,
-        //         'subject' => "Shipment Status Update",
-        //     ];
+        if ($email) {
+            $emailPayload = [
+                'recipient' => $email,
+                'text' => $message,
+                'subject' => "Shipment Status Update",
+            ];
 
-        //     try {
-        //         // Mail::to($email)->queue(new TestMarkdownMail($trackingId, $full_name));
-        //         $responses[] = ["email" => $emailPayload];
-        //     } catch (\Exception $e) {
-        //         $emailSuccess = false;
-        //         $responses[] = ["email" => "Email notification failed: " . $e->getMessage()];
-        //     }
-        // }
+            try {
+                Mail::to($email)->queue(new TestMarkdownMail($trackingId, $full_name));
+                $responses[] = ["email" => $emailPayload];
+            } catch (\Exception $e) {
+                $emailSuccess = false;
+                $responses[] = ["email" => "Email notification failed: " . $e->getMessage()];
+            }
+        }
 
         // Only update status if both notifications succeeded
         if ($whatsappSuccess && $emailSuccess) {
