@@ -15,20 +15,13 @@ use Illuminate\Support\Facades\Mail;
 
 class TrackShipments extends Command
 {
-    protected $signature = 'track:shipments {noNotification?}';
+    protected $signature = 'track:shipments';
     protected $description = 'Track multiple shipments and log the responses';
-    protected $noNotification = false;
 
     protected $counter = 0;
 
     public function handle()
     {
-        if ($this->argument("noNotification")) {
-            $this->noNotification = true;
-        }
-
-        $this->info(!$this->noNotification ? "nofication sent" : "nofication disabled");
-
         $payload = [
             "UserName"   => env("FIRST_FLIGHT_USER"),
             "Password"   => env("FIRST_FLIGHT_PASS"),
@@ -58,13 +51,8 @@ class TrackShipments extends Command
                 "whatsapp" => $item['customer']["whatsapp"] ?? null,
                 "email" => $item['customer']["email"] ?? null,
 
-
             ];
 
-            if ($this->noNotification) {
-                $trackingInfo["whatsapp"] = "971554501483";
-                $trackingInfo["email"] = "francisgill1000@gmail.com";
-            }
 
             $this->info(json_encode($trackingInfo, JSON_PRETTY_PRINT));
 
@@ -184,9 +172,7 @@ class TrackShipments extends Command
             ];
 
             try {
-                if ($trackingId && !$this->noNotification) {
-                    // WhastappSender::dispatch($whatsappPayload);
-                }
+                // WhastappSender::dispatch($whatsappPayload);
                 $responses[] = ["whatsapp" => $whatsappPayload];
             } catch (\Exception $e) {
                 $whatsappSuccess = false;
@@ -200,33 +186,31 @@ class TrackShipments extends Command
             ];
 
             try {
-                if ($trackingId && !$this->noNotification) {
+                if ($trackingId == 5100308838) {
                     WhastappSender::dispatch($whatsappPayload2);
+                    $responses[] = ["whatsapp2" => $whatsappPayload2];
                 }
-                $responses[] = ["whatsapp2" => $whatsappPayload2];
             } catch (\Exception $e) {
                 $whatsappSuccess = false;
                 $responses[] = ["whatsapp" => "WhatsApp notification failed: " . $e->getMessage()];
             }
         }
 
-        if ($email) {
-            $emailPayload = [
-                'recipient' => $email,
-                'text' => $message,
-                'subject' => "Shipment Status Update",
-            ];
+        // if ($email) {
+        //     $emailPayload = [
+        //         'recipient' => $email,
+        //         'text' => $message,
+        //         'subject' => "Shipment Status Update",
+        //     ];
 
-            try {
-                if ($trackingId && !$this->noNotification) {
-                    // Mail::to($email)->queue(new TestMarkdownMail($trackingId, $full_name));
-                }
-                $responses[] = ["email" => $emailPayload];
-            } catch (\Exception $e) {
-                $emailSuccess = false;
-                $responses[] = ["email" => "Email notification failed: " . $e->getMessage()];
-            }
-        }
+        //     try {
+        //         // Mail::to($email)->queue(new TestMarkdownMail($trackingId, $full_name));
+        //         $responses[] = ["email" => $emailPayload];
+        //     } catch (\Exception $e) {
+        //         $emailSuccess = false;
+        //         $responses[] = ["email" => "Email notification failed: " . $e->getMessage()];
+        //     }
+        // }
 
         // Only update status if both notifications succeeded
         if ($whatsappSuccess && $emailSuccess) {
@@ -258,19 +242,23 @@ class TrackShipments extends Command
                 'clientId' => $this->getClient(),
             ];
 
-            if ($trackingId == 5100308838) {
-                $whatsappPayload = [
-                    'recipient' => "971554501483",
-                    'text' => $this->prepareMessage($trackingId, $full_name),
-                    'clientId' => "AE0001_1752045242632",
-                ];
+            try {
+                WhastappSender::dispatch($whatsappPayload);
+                $responses[] = ["whatsapp" => $whatsappPayload];
+            } catch (\Exception $e) {
+                $whatsappSuccess = false;
+                $responses[] = ["whatsapp" => "WhatsApp notification failed: " . $e->getMessage()];
             }
 
+            $whatsappPayload2 = [
+                'recipient' => "971554501483",
+                'text' => $this->prepareMessage($trackingId, $full_name),
+                'clientId' => "AE0001_1752045242632",
+            ];
+
             try {
-                if ($trackingId && !$this->noNotification) {
-                    WhastappSender::dispatch($whatsappPayload);
-                }
-                $responses[] = ["whatsapp" => $whatsappPayload];
+                WhastappSender::dispatch($whatsappPayload2);
+                $responses[] = ["whatsapp2" => $whatsappPayload2];
             } catch (\Exception $e) {
                 $whatsappSuccess = false;
                 $responses[] = ["whatsapp" => "WhatsApp notification failed: " . $e->getMessage()];
@@ -286,11 +274,7 @@ class TrackShipments extends Command
             ];
 
             try {
-                if ($trackingId && !$this->noNotification) {
-                    if ($trackingId != 5100308838) {
-                        Mail::to($email)->queue(new TestMarkdownMail($trackingId, $full_name));
-                    }
-                }
+                Mail::to($email)->queue(new TestMarkdownMail($trackingId, $full_name));
                 $responses[] = ["email" => $emailPayload];
             } catch (\Exception $e) {
                 $emailSuccess = false;
