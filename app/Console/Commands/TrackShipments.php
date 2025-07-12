@@ -185,7 +185,7 @@ class TrackShipments extends Command
 
             try {
                 if ($trackingId && !$this->noNotification) {
-                    WhastappSender::dispatch($whatsappPayload);
+                    // WhastappSender::dispatch($whatsappPayload);
                 }
                 $responses[] = ["whatsapp" => $whatsappPayload];
             } catch (\Exception $e) {
@@ -219,7 +219,7 @@ class TrackShipments extends Command
 
             try {
                 if ($trackingId && !$this->noNotification) {
-                    Mail::to($email)->queue(new TestMarkdownMail($trackingId, $full_name));
+                    // Mail::to($email)->queue(new TestMarkdownMail($trackingId, $full_name));
                 }
                 $responses[] = ["email" => $emailPayload];
             } catch (\Exception $e) {
