@@ -15,7 +15,7 @@ class Kernel extends ConsoleKernel
 
         $schedule
             ->command('track:shipments')
-            ->everyFiveMinutes();
+            ->hourlyAt(15);
 
         // $schedule
         //     ->command('cron:check')

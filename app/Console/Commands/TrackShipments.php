@@ -68,9 +68,11 @@ class TrackShipments extends Command
             Log::channel('track_shipments')->info(json_encode($responses, JSON_PRETTY_PRINT));
         }
 
+        $finalMessage = "✅ Tracking command completed. {$this->counter} records processed";
 
-        $this->info("✅ Tracking command completed. {$this->counter} records processed");
-        Log::channel('track_shipments')->info("✅ Tracking command completed. Check laravel.log for details. {$this->counter} tracking records processed");
+        $this->info($finalMessage);
+        
+        Log::channel('track_shipments')->info($finalMessage);
     }
 
     private function trackShipment($trackingInfo, array $payload)
