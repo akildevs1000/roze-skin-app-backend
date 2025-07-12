@@ -13,9 +13,9 @@ class Kernel extends ConsoleKernel
         //     ->command('track:shipments-test')
         //     ->everyMinute();
 
-        $schedule
-            ->command('track:shipments')
-            ->everyFiveMinutes();
+        // $schedule
+        //     ->command('track:shipments')
+        //     ->everyFiveMinutes();
 
         // $schedule
         //     ->command('cron:check')
