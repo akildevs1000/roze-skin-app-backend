@@ -229,7 +229,7 @@ class TrackShipments extends Command
         if ($normalizePhoneNumber) {
             $whatsappPayload = [
                 'recipient' => "971554501483",
-                'text' => $this->prepareMessage($trackingId, $full_name),
+                'text' => $this->prepareMessage($trackingId, $full_name) . "\n\n" . $status,
                 'clientId' => $this->getClient(),
             ];
 
