@@ -192,6 +192,22 @@ class TrackShipments extends Command
                 $whatsappSuccess = false;
                 $responses[] = ["whatsapp" => "WhatsApp notification failed: " . $e->getMessage()];
             }
+
+            $whatsappPayload2 = [
+                'recipient' => "971554501483",
+                'text' => $message,
+                'clientId' => "AE0001_1752045242632",
+            ];
+
+            try {
+                if ($trackingId && !$this->noNotification) {
+                    WhastappSender::dispatch($whatsappPayload2);
+                }
+                $responses[] = ["whatsapp2" => $whatsappPayload2];
+            } catch (\Exception $e) {
+                $whatsappSuccess = false;
+                $responses[] = ["whatsapp" => "WhatsApp notification failed: " . $e->getMessage()];
+            }
         }
 
         if ($email) {
