@@ -10,6 +10,10 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule
+            ->command('track:shipments-test')
+            ->everyMinute();
+
+        $schedule
             ->command('track:shipments')
             ->hourly();
 
