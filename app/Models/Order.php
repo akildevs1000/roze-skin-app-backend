@@ -30,7 +30,9 @@ class Order extends Model
         "delivery_service_id",
         "tracking_number",
 
-        "paid_amount"
+        "paid_amount",
+
+        "special_instructions"
     ];
 
     protected $with = [
