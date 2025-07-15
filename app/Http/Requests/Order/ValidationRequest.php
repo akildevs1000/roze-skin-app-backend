@@ -68,6 +68,8 @@ class ValidationRequest extends FormRequest
             'delivery_service_id' => 'nullable',
             'tracking_number' => 'nullable|min:1|max:50',
             'paid_amount' => 'nullable',
+
+            'special_instructions' => 'nullable',
         ];
     }
 }
