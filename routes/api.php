@@ -16,6 +16,12 @@ use App\Http\Controllers\PaymentModeController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WhatsappClientController;
+use Illuminate\Support\Facades\Log;
+
+Route::get('/', function () {
+    Log::channel('health')->info('Backend is working');
+    return "Backend is working";
+});
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
