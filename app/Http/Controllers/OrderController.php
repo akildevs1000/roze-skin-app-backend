@@ -209,9 +209,14 @@ class OrderController extends Controller
         $validatedData = $request->validated();
 
         if ($validatedData['order_id'] > 0 && Order::where('order_id', $validatedData['order_id'])->exists()) {
-            return response()->json([
+
+            $response = [
                 'message' => 'Order Id ' . $validatedData['order_id'] . ' already exists.',
-            ], 409);
+            ];
+
+            Log::channel('orders')->info(json_encode(["request" => $request->all(), "response" => $response], JSON_PRETTY_PRINT));
+
+            return response()->json($response, 409);
         }
 
         $customer = Customer::storeOrUpdateCustomerWithAddresses($validatedData);
