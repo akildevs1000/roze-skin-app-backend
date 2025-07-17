@@ -321,9 +321,9 @@ class Controller extends BaseController
             $number = substr($number, 1);
         }
 
-        // If number starts with '0', it's invalid (no country code)
+        // If number starts with '0', replace with '971'
         if (strpos($number, '0') === 0) {
-            return false;
+            $number = '971' . substr($number, 1);
         }
 
         // Accept only digits
