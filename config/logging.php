@@ -61,7 +61,7 @@ return [
             'driver' => 'daily',
             'path' => storage_path('logs/health.log'),
             'level' => 'info',
-            'days' => 7,
+            'days' => 1,
         ],
         'croncheck' => [
             'driver' => 'single',
