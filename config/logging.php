@@ -52,9 +52,10 @@ return [
 
     'channels' => [
         'orders' => [
-            'driver' => 'single',
+            'driver' => 'daily',
             'path' => storage_path('logs/orders.log'),
             'level' => 'info',
+            'days' => 7,
         ],
         'croncheck' => [
             'driver' => 'single',
