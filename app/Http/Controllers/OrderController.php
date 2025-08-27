@@ -127,9 +127,6 @@ class OrderController extends Controller
             ->when($status, function ($q) use ($status) {
                 $q->whereHas("invoice", fn($q) => $q->where('status', $status));
             })
-            ->when(request('from') && request('to'), function ($q) use ($dates) {
-                $q->whereBetween('order_date', $dates);
-            })
 
             ->when($customer_id, function ($q) use ($customer_id) {
                 $q->where('customer_id', $customer_id);
@@ -150,6 +147,8 @@ class OrderController extends Controller
             ->when($payment_method, function ($q) use ($payment_method) {
                 $q->where('payment_method', $payment_method);
             })
+
+            ->whereBetween('order_date', $dates)
 
             ->with(['business_source', 'delivery_service', "invoice"])
             ->paginate($perPage);

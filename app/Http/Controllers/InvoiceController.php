@@ -1,10 +1,7 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Invoice\ValidationRequest;
-use App\Jobs\SendWhatsappMessage;
-use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Order;
 use Carbon\Carbon;
@@ -25,40 +22,27 @@ class InvoiceController extends Controller
 
         $status = request('status');
 
+        $payment_method = request('payment_method');
+
         $customer_id = request('customer_id');
 
         $delivery_service_id = request('delivery_service_id');
 
         $from = request('from') ? request('from') . " 00:00:00" : date("Y-m-d 00:00:00");
-        $to = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
+        $to   = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
 
         $dates = [$from, $to];
 
         $perPage = min((int) request('per_page', 15), 100); // Limit max results per page
 
         return Invoice::with([
-            'customer' => function ($q) {
-                $q->with(['shipping_address', 'billing_address']);
-            },
-            'payments' => function ($q) {
-                $q->with(['payment_mode']);
-            },
-            'order',
-            'business_source',
-            'delivery_service'
+            'customer.shipping_address',
+            'customer.billing_address',
+            'payments.payment_mode',
+            'order.delivery_service',
+            'order.business_source',
         ])
-            ->when($delivery_service_id, function ($q) use ($delivery_service_id) {
-                $q->where('delivery_service_id', $delivery_service_id);
-            })
-            ->when($customer_id, function ($q) use ($customer_id) {
-                $q->where('customer_id', $customer_id);
-            })
-            ->when(request('from') && request('to'), function ($q) use ($dates) {
-                $q->whereBetween('created_at', $dates);
-            })
-            ->when($status, function ($q) use ($status) {
-                $q->where('status', $status);
-            })
+
             ->when($search, function ($q) use ($search) {
 
                 $order_id = Order::where("order_id", $search)->value("id");
@@ -73,13 +57,38 @@ class InvoiceController extends Controller
                         });
                 }
             })
+
+            ->when($customer_id, function ($q) use ($customer_id) {
+                $q->whereHas('order', function ($q) use ($customer_id) {
+                    $q->where('customer_id', $customer_id);
+                });
+            })
+
+            ->when($delivery_service_id, function ($q) use ($delivery_service_id) {
+                $q->whereHas('order', function ($q) use ($delivery_service_id) {
+                    $q->where('delivery_service_id', $delivery_service_id);
+                });
+            })
+
+            ->when($payment_method, function ($q) use ($payment_method) {
+                $q->whereHas('order', function ($q) use ($payment_method) {
+                    $q->where('payment_method', $payment_method);
+                });
+            })
+
+            ->when($status, function ($q) use ($status) {
+                $q->where('status', $status);
+            })
+
+            ->whereBetween('created_at', $dates)
+
             ->orderByDesc('id')
             ->paginate($perPage);
     }
 
     public function stats()
     {
-        $now = Carbon::now();
+        $now          = Carbon::now();
         $currentMonth = $now->month;
 
         // Get last month's stats from cache or compute and store them
@@ -88,31 +97,31 @@ class InvoiceController extends Controller
 
             return [
                 'invoices' => Invoice::whereMonth('created_at', $lastMonth)->count(),
-                'income' => Order::whereHas("invoice")->whereMonth('created_at', $lastMonth)->sum('total'), // this is working fine but i want from invoice from 
+                'income'   => Order::whereHas("invoice")->whereMonth('created_at', $lastMonth)->sum('total'), // this is working fine but i want from invoice from
             ];
         });
 
         // Real-time data
         $ordersThisMonth = Invoice::whereMonth('created_at', $currentMonth)->count();
         $incomeThisMonth = Order::whereHas("invoice")->whereMonth('created_at', $currentMonth)->sum('total');
-        $totalOrders = Invoice::count();
+        $totalOrders     = Invoice::count();
 
         return [
             [
                 'label' => 'Last Month / Current Month (Invoice)',
-                'icon' => 'mdi-cart-outline',
+                'icon'  => 'mdi-cart-outline',
                 'value' => "{$lastMonthStats['invoices']} / $ordersThisMonth",
                 'color' => 'blue',
             ],
             [
                 'label' => 'Total Orders',
-                'icon' => 'mdi-calendar-today',
+                'icon'  => 'mdi-calendar-today',
                 'value' => $totalOrders,
                 'color' => 'indigo',
             ],
             [
                 'label' => 'Last Month / Current Month (Income)',
-                'icon' => 'mdi-currency-usd',
+                'icon'  => 'mdi-currency-usd',
                 'value' => "{$lastMonthStats['income']} / $incomeThisMonth",
                 'color' => 'green',
             ],
@@ -128,12 +137,12 @@ class InvoiceController extends Controller
         try {
             // Prepare invoice payload
             $invoiceData = [
-                'customer_id' => $validated['customer_id'],
-                'order_id' => $validated['order_id'],
-                'business_source_id' => $validated['business_source_id'],
-                'delivery_service_id' => $validated['delivery_service_id'],
-                'tracking_number' => $validated['tracking_number'] ?? 0,
-                'status' => $validated['status'],
+                'customer_id'             => $validated['customer_id'],
+                'order_id'                => $validated['order_id'],
+                'business_source_id'      => $validated['business_source_id'],
+                'delivery_service_id'     => $validated['delivery_service_id'],
+                'tracking_number'         => $validated['tracking_number'] ?? 0,
+                'status'                  => $validated['status'],
                 'converted_to_invoice_at' => now(),
             ];
 
@@ -154,7 +163,7 @@ class InvoiceController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Invoice stored successfully.',
-                'data' => $invoice
+                'data'    => $invoice,
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -162,7 +171,7 @@ class InvoiceController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while storing the invoice.',
-                'error' => $e->getMessage(),
+                'error'   => $e->getMessage(),
             ], 500);
         }
     }
@@ -171,23 +180,23 @@ class InvoiceController extends Controller
     {
         // Validate incoming request data
         $validated = $request->validate([
-            'business_source_id' => 'required|integer|exists:business_sources,id',
-            'delivery_service_id' => 'required|integer|exists:delivery_services,id',
-            'tracking_number' => 'nullable|max:255',
-            'payment_method' => 'required|string|max:100',
+            'business_source_id'   => 'required|integer|exists:business_sources,id',
+            'delivery_service_id'  => 'required|integer|exists:delivery_services,id',
+            'tracking_number'      => 'nullable|max:255',
+            'payment_method'       => 'required|string|max:100',
             'payment_method_title' => 'nullable|string|max:255',
-            'paid_amount' => 'required|numeric|min:0',
-            'order_id' => 'required',
-            'status' => 'required'
+            'paid_amount'          => 'required|numeric|min:0',
+            'order_id'             => 'required',
+            'status'               => 'required',
         ]);
 
         $orderPayload = [
-            "business_source_id" => $validated['business_source_id'],
-            "delivery_service_id" => $validated['delivery_service_id'],
-            "tracking_number" => $validated['tracking_number'] ?? 0,
-            "payment_method" => $validated['payment_method'],
+            "business_source_id"   => $validated['business_source_id'],
+            "delivery_service_id"  => $validated['delivery_service_id'],
+            "tracking_number"      => $validated['tracking_number'] ?? 0,
+            "payment_method"       => $validated['payment_method'],
             "payment_method_title" => $validated['payment_method_title'],
-            "paid_amount" => $validated['paid_amount'],
+            "paid_amount"          => $validated['paid_amount'],
         ];
 
         Order::where("id", $validated['order_id'])->update($orderPayload);

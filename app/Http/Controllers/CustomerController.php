@@ -9,7 +9,7 @@ class CustomerController extends Controller
 {
     public function dropDown()
     {
-        return Customer::get();
+        return Customer::whereHas("orders")->orderBy("id","desc")->get();
     }
 
     /**
