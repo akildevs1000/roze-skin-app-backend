@@ -68,6 +68,9 @@ Route::get('lattest-order', [OrderController::class, "latestOrder"]);
 Route::post('order-creater-acknowledge', [OrderController::class, "orderCreateAcknowledge"]);
 Route::post('cancel-order', [OrderController::class, "cancelOrder"]);
 Route::get('status-list', [OrderController::class, "getStatusesDropdown"]);
+Route::get('order-qty-by-date', [OrderController::class, "orderQtyByDate"]);
+Route::get('order-sum-by-date', [OrderController::class, "orderSumByDate"]);
+Route::get('orders-stats-by-date', [OrderController::class, "statsByDate"]);
 
 Route::apiResource('invoices', InvoiceController::class);
 Route::get('invoice-list', [InvoiceController::class, "dropDown"]);

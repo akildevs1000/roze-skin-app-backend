@@ -446,4 +446,75 @@ class OrderController extends Controller
         Log::channel('order_cancel')->info($message, $logPayload);
 
     }
+
+    public function orderQtyByDate(Request $request)
+    {
+        $from = $request->query('from_date');
+        $to   = $request->query('to_date');
+
+        $query = Order::selectRaw('DATE(created_at) as date, COUNT(*) as total')
+            ->groupBy('date')
+            ->orderBy('date');
+
+        $query->whereDate('created_at', '>=', $from ?? date("Y-m-01"));
+        $query->whereDate('created_at', '<=', $to ?? date("Y-m-t"));
+
+        return $query->get()->toArray();
+    }
+
+    public function orderSumByDate(Request $request)
+    {
+        $from = $request->query('from_date');
+        $to   = $request->query('to_date');
+
+        $query = Order::selectRaw('DATE(created_at) as date, SUM(total) as total')
+            ->groupBy('date')
+            ->orderBy('date');
+
+        // Default to first and last day of current month if not provided
+        $query->whereDate('created_at', '>=', $from ?? date("Y-m-01"));
+        $query->whereDate('created_at', '<=', $to ?? date("Y-m-t"));
+
+        return $query->get()->toArray();
+    }
+
+    public function statsByDate(Request $request)
+    {
+        $from = $request->query('from_date');
+        $to   = $request->query('to_date');
+
+        $query = Order::query();
+
+        // Default to first and last day of current month if not provided
+        $query->whereDate('created_at', '>=', $from ?? date("Y-m-01"));
+        $query->whereDate('created_at', '<=', $to ?? date("Y-m-t"));
+
+        $totalOrders = $query->clone()->whereNot("order_status", "cancelled")->count();
+        $cancelledOrders = $query->clone()->where("order_status", "cancelled")->count();
+        $totalOrdersSum = $query->sum("total");
+
+
+
+        return [
+            [
+                'label' => 'Total Orders',
+                'icon'  => 'mdi-cart-outline',
+                'value' => $totalOrders,
+                'color' => 'indigo',
+            ],
+            [
+                'label' => 'Cancelled Orders',
+                'icon'  => 'mdi-cancel',
+                'value' => $cancelledOrders,
+                'color' => 'orange',
+            ],
+            [
+                'label' => 'Total (Income)',
+                'icon'  => 'mdi-currency-usd',
+                'value' => $totalOrdersSum ,
+                'color' => 'green',
+            ],
+        ];
+    }
+
 }
