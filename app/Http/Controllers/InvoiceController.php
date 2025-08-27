@@ -139,9 +139,6 @@ class InvoiceController extends Controller
             $invoiceData = [
                 'customer_id'             => $validated['customer_id'],
                 'order_id'                => $validated['order_id'],
-                'business_source_id'      => $validated['business_source_id'],
-                'delivery_service_id'     => $validated['delivery_service_id'],
-                'tracking_number'         => $validated['tracking_number'] ?? 0,
                 'status'                  => $validated['status'],
                 'converted_to_invoice_at' => now(),
             ];

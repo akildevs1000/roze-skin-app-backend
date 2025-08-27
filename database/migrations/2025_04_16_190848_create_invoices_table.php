@@ -17,9 +17,6 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger("customer_id")->default(0);
             $table->unsignedBigInteger("order_id")->default(0);
-            $table->unsignedBigInteger("business_source_id")->default(0);
-            $table->unsignedBigInteger("delivery_service_id")->default(0);
-            $table->unsignedBigInteger("tracking_number")->default(0);
             $table->string("status")->nullable();
             $table->timestamps();
         });
