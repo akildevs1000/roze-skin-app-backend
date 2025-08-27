@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use App\Traits\HasReferenceId;
@@ -32,7 +31,9 @@ class Order extends Model
 
         "paid_amount",
 
-        "special_instructions"
+        "special_instructions",
+
+        "cancel_reason",
     ];
 
     protected $with = [
@@ -41,8 +42,32 @@ class Order extends Model
     ];
 
     protected $casts = [
-        "items" => "array"
+        "items" => "array",
     ];
+
+    public static array $statuses = [
+        ['id' => 'pending', 'name' => 'Pending'],
+        ['id' => 'shipped', 'name' => 'Shipped'],
+        ['id' => 'delivered', 'name' => 'Delivered'],
+        ['id' => 'cancelled', 'name' => 'Cancelled'],
+        ['id' => 'refunded', 'name' => 'Refunded'],
+    ];
+
+    public static function getStatuses(): array
+    {
+        return self::$statuses;
+    }
+
+    public static function getStatusName(string $id): string
+    {
+        $status = collect(self::$statuses)->firstWhere('id', $id);
+        return $status['name'] ?? ucfirst($id);
+    }
+
+    public function getStatusLabel(): string
+    {
+        return self::getStatusName($this->order_status);
+    }
 
     public function customer()
     {
@@ -71,7 +96,6 @@ class Order extends Model
     }
 
     protected $appends = ['date_time', 'total_paid_amount', 'reference_id'];
-
 
     public function getReferenceIdAttribute()
     {

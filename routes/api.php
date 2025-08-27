@@ -1,9 +1,6 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-
 use App\Http\Controllers\AuthController;
-use Illuminate\Support\Facades\Request;
 use App\Http\Controllers\BusinessSourceController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DeliveryServiceController;
@@ -11,12 +8,14 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\PaymentModeController;
+use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WhatsappClientController;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     Log::channel('health')->info('Backend is working');
@@ -30,8 +29,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::get('/top-menu', [MenuController::class, 'getTopmenu']);
 Route::get('/side-menu', [MenuController::class, 'getSidemenu']);
 
-
-
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/me', [AuthController::class, 'me'])->middleware('auth:sanctum');
 Route::get('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
@@ -41,7 +38,6 @@ Route::post('/check_otp/{otp}', [AuthController::class, 'checkOTP']);
 Route::apiResource('products', ProductController::class);
 Route::get('product-list', [ProductController::class, "dropDown"]);
 Route::post('products-update', [ProductController::class, "updateProduct"]);
-
 
 Route::apiResource('business-sources', BusinessSourceController::class);
 Route::get('business-source-list', [BusinessSourceController::class, "dropDown"]);
@@ -70,7 +66,8 @@ Route::get('orders-stats', [OrderController::class, "stats"]);
 Route::get('order-list', [OrderController::class, "dropDown"]);
 Route::get('lattest-order', [OrderController::class, "latestOrder"]);
 Route::post('order-creater-acknowledge', [OrderController::class, "orderCreateAcknowledge"]);
-
+Route::post('cancel-order', [OrderController::class, "cancelOrder"]);
+Route::get('status-list', [OrderController::class, "getStatusesDropdown"]);
 
 Route::apiResource('invoices', InvoiceController::class);
 Route::get('invoice-list', [InvoiceController::class, "dropDown"]);

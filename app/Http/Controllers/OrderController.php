@@ -1,11 +1,8 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Order\ValidationRequest;
-use App\Jobs\BirthdayWishWhatsappCustomer;
 use App\Jobs\SendEmail;
-use App\Jobs\SendWhatsappMessage;
 use App\Jobs\WhastappSender;
 use App\Models\Customer;
 use App\Models\Invoice;
@@ -35,14 +32,14 @@ class OrderController extends Controller
             ->value('order_id');
 
         return $orderId
-            ? Order::with(['business_source', 'delivery_service', 'invoice'])->find($orderId)
-            : null;
+        ? Order::with(['business_source', 'delivery_service', 'invoice'])->find($orderId)
+        : null;
     }
 
     public function orderCreateAcknowledge()
     {
 
-        $order = Order::findOrFail(request('orderPrimaryId'));
+        $order                  = Order::findOrFail(request('orderPrimaryId'));
         $order->tracking_number = request('airwayBillNumber') ?? '0';
         $order->save();
 
@@ -51,23 +48,21 @@ class OrderController extends Controller
         if ($templates->isEmpty()) {
 
             return response()->json([
-                "message" => "Trigger not found. Please go to Settings → Templates and create a new template for the 'Order Dispatched' trigger. Provide a name, select the 'Order Dispatched' action, and write the message in the description box. Same thing do this for email also if you want send notification as email also"
+                "message" => "Trigger not found. Please go to Settings → Templates and create a new template for the 'Order Dispatched' trigger. Provide a name, select the 'Order Dispatched' action, and write the message in the description box. Same thing do this for email also if you want send notification as email also",
             ]);
         }
-
 
         $responses = [];
 
         $arr = $this->prepareMessage($templates, $order->customer, $order);
-
 
         if ($arr["whatsapp"]) {
             $normalizePhoneNumber = $this->normalizePhoneNumber($order->customer->whatsapp);
             if ($normalizePhoneNumber) {
                 $whatsappPayload = [
                     'recipient' => $normalizePhoneNumber,
-                    'text' => $arr["whatsapp"],
-                    'clientId' => $this->getClient(),
+                    'text'      => $arr["whatsapp"],
+                    'clientId'  => $this->getClient(),
                 ];
 
                 WhastappSender::dispatch($whatsappPayload);
@@ -79,8 +74,8 @@ class OrderController extends Controller
         if ($arr["email"]) {
             $emailPayload = [
                 'recipient' => $order->customer->email,
-                'text' => $arr["email"],
-                'subject' => "Order Received"
+                'text'      => $arr["email"],
+                'subject'   => "Order Received",
             ];
 
             SendEmail::dispatch($emailPayload);
@@ -96,23 +91,30 @@ class OrderController extends Controller
         return Order::orderByDesc('id')->get();
     }
 
+    public function getStatusesDropdown()
+    {
+        return Order::getStatuses();
+    }
+
     public function index()
     {
         $search = trim(request('search'));
 
-        if (request('search') && !is_numeric($search)) return;
+        if (request('search') && ! is_numeric($search)) {
+            return;
+        }
 
-        $status = request('status');
+        $status       = request('status');
+        $order_status = request('order_status');
 
         $customer_id = request('customer_id');
 
-        $business_source_id = request('business_source_id');
+        $business_source_id  = request('business_source_id');
         $delivery_service_id = request('delivery_service_id');
-        $payment_method = request('payment_method');
-
+        $payment_method      = request('payment_method');
 
         $from = request('from') ? request('from') . " 00:00:00" : date("Y-m-d 00:00:00");
-        $to = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
+        $to   = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
 
         $dates = [$from, $to];
 
@@ -120,8 +122,7 @@ class OrderController extends Controller
 
         return Order::orderByDesc('id')
             ->when($search, function ($q) use ($search) {
-                $q->where('order_id', $search)
-                    ->orWhere('tracking_number', $search);
+                $q->where('order_id', $search);
             })
             ->when($status, function ($q) use ($status) {
                 $q->whereHas("invoice", fn($q) => $q->where('status', $status));
@@ -132,6 +133,10 @@ class OrderController extends Controller
 
             ->when($customer_id, function ($q) use ($customer_id) {
                 $q->where('customer_id', $customer_id);
+            })
+
+            ->when($order_status, function ($q) use ($order_status) {
+                $q->where('order_status', $order_status);
             })
 
             ->when($business_source_id, function ($q) use ($business_source_id) {
@@ -152,7 +157,7 @@ class OrderController extends Controller
 
     public function stats()
     {
-        $now = Carbon::now();
+        $now          = Carbon::now();
         $currentMonth = $now->month;
 
         // Get last month's stats from cache or compute and store them
@@ -168,37 +173,36 @@ class OrderController extends Controller
         // Real-time data
         $ordersThisMonth = Order::whereMonth('created_at', $currentMonth)->count();
         $incomeThisMonth = Order::whereMonth('created_at', $currentMonth)->sum('total');
-        $pendingOrders = Order::whereDoesntHave('invoice')->count();
-        $totalOrders = Order::count();
+        $pendingOrders   = Order::whereDoesntHave('invoice')->count();
+        $totalOrders     = Order::count();
 
         return [
             [
                 'label' => 'Last Month / Current Month (Orders)',
-                'icon' => 'mdi-cart-outline',
+                'icon'  => 'mdi-cart-outline',
                 'value' => "{$lastMonthStats['orders']} / $ordersThisMonth",
                 'color' => 'blue',
             ],
             [
                 'label' => 'Total Orders',
-                'icon' => 'mdi-calendar-today',
+                'icon'  => 'mdi-calendar-today',
                 'value' => $totalOrders,
                 'color' => 'indigo',
             ],
             [
                 'label' => 'Pending Order',
-                'icon' => 'mdi-clock-outline',
+                'icon'  => 'mdi-clock-outline',
                 'value' => $pendingOrders,
                 'color' => 'orange',
             ],
             [
                 'label' => 'Last Month / Current Month (Income)',
-                'icon' => 'mdi-currency-usd',
+                'icon'  => 'mdi-currency-usd',
                 'value' => "{$lastMonthStats['income']} / $incomeThisMonth",
                 'color' => 'green',
             ],
         ];
     }
-
 
     public function store(ValidationRequest $request)
     {
@@ -219,14 +223,14 @@ class OrderController extends Controller
             return response()->json($response, 409);
         }
 
-        $customer = Customer::storeOrUpdateCustomerWithAddresses($validatedData);
+        $customer                     = Customer::storeOrUpdateCustomerWithAddresses($validatedData);
         $validatedData["customer_id"] = $customer->id ?? 0;
-        $validatedData["order_date"] = date("Y-m-d H:i:s");
-        $order = Order::create($validatedData);
+        $validatedData["order_date"]  = date("Y-m-d H:i:s");
+        $order                        = Order::create($validatedData);
 
         $templates = Template::whereActionId(["action_id" => Template::ORDER_RECEIVED])->orderBy("id", "desc")->get();
 
-        if (!count($templates)) {
+        if (! count($templates)) {
             return $order;
         }
 
@@ -239,8 +243,8 @@ class OrderController extends Controller
             if ($normalizePhoneNumber) {
                 $whatsappPayload = [
                     'recipient' => $normalizePhoneNumber,
-                    'text' => $arr["whatsapp"],
-                    'clientId' => $this->getClient(),
+                    'text'      => $arr["whatsapp"],
+                    'clientId'  => $this->getClient(),
                 ];
 
                 WhastappSender::dispatch($whatsappPayload);
@@ -252,8 +256,8 @@ class OrderController extends Controller
         if ($arr["email"]) {
             $emailPayload = [
                 'recipient' => $customer->email,
-                'text' => $arr["email"],
-                'subject' => "Order Received"
+                'text'      => $arr["email"],
+                'subject'   => "Order Received",
             ];
 
             SendEmail::dispatch($emailPayload);
@@ -274,6 +278,70 @@ class OrderController extends Controller
         return $order;
     }
 
+    public function cancelOrder()
+    {
+        try {
+            $orderId      = request("order_id");
+            $invoice_id   = request("invoice_id");
+            $cancelReason = request("cancel_reason");
+
+            $this->recordLog("Cancel order request received.");
+
+            $order = Order::where("order_id", $orderId)->first();
+
+            if (! $order) {
+
+                $this->recordLog("Order not found.");
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found.',
+                ], 404);
+            }
+
+            if ($invoice_id) {
+
+                $invoice = Invoice::where("id", $invoice_id)->first();
+
+                if (! $invoice) {
+                    $this->recordLog("Invoice not found.");
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invoice not found.',
+                    ], 404);
+
+                }
+
+                $invoice->update([
+                    "status" => 'Cancelled',
+                ]);
+
+            }
+
+            $order->update([
+                "order_status"  => 'cancelled',
+                "cancel_reason" => $cancelReason,
+            ]);
+
+            $this->recordLog("Order cancelled successfully.");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order has been cancelled.',
+                'order'   => $order,
+            ]);
+
+        } catch (\Exception $e) {
+            $this->recordLog("Error while cancelling order.");
+
+            return response()->json([
+                'success' => false,
+                'message' => "Service Error",
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function destroy($id)
     {
         $order = Order::where("id", $id)->first();
@@ -285,15 +353,14 @@ class OrderController extends Controller
         return 500;
     }
 
-    function prepareMessage($templates, $customer, $order)
+    public function prepareMessage($templates, $customer, $order)
     {
-        $full_name = $customer->full_name;
-        $order_id = $order->order_id > 0 ? $order->order_id : $order->id;
-        $items = collect($order->items)->pluck('item')->implode(', ');
-        $total = $order->total;
+        $full_name        = $customer->full_name;
+        $order_id         = $order->order_id > 0 ? $order->order_id : $order->id;
+        $items            = collect($order->items)->pluck('item')->implode(', ');
+        $total            = $order->total;
         $shipping_address = $customer->shipping_address->full_address;
-        $tracking_number = $order->tracking_number;
-
+        $tracking_number  = $order->tracking_number;
 
         // $message = "Dear $full_name\n\n"
         //     . "Thank you for your order!\n\n"
@@ -305,9 +372,8 @@ class OrderController extends Controller
         //     . "We will notify you once it has been shipped.\n\n"
         //     . "Team RozeSkin";
 
-
         $whatsapp = null;
-        $email = null;
+        $email    = null;
 
         foreach ($templates as $key => $template) {
 
@@ -323,7 +389,7 @@ class OrderController extends Controller
                         $items,
                         $total,
                         $shipping_address,
-                        $tracking_number
+                        $tracking_number,
                     ],
                     $messageBody
                 );
@@ -344,7 +410,7 @@ class OrderController extends Controller
                         $items,
                         $total,
                         $shipping_address,
-                        $tracking_number
+                        $tracking_number,
                     ],
                     $messageBody
                 );
@@ -359,9 +425,26 @@ class OrderController extends Controller
         return ["whatsapp" => trim($whatsapp), "email" => trim($email)];
     }
 
-    function getClient()
+    public function getClient()
     {
         $clientId = WhatsappClient::value("accounts")[0]["clientId"] ?? "test";
         return $clientId;
+    }
+
+    public function recordLog($message)
+    {
+
+        $orderId      = request("order_id");
+        $invoice_id   = request("invoice_id");
+        $cancelReason = request("cancel_reason");
+
+        $logPayload = [
+            "order_id"      => $orderId,
+            "invoice_id"    => $invoice_id,
+            "cancel_reason" => $cancelReason,
+        ];
+
+        Log::channel('order_cancel')->info($message, $logPayload);
+
     }
 }
