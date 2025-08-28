@@ -21,7 +21,7 @@ class Customer extends Model
         'whatsapp',
     ];
 
-    protected $appends = ['full_name', 'date_time', 'dob_display', 'reference_id'];
+    protected $appends = ['full_name','customer_with_phone', 'date_time', 'dob_display', 'reference_id'];
 
     public function getReferenceIdAttribute()
     {
@@ -41,6 +41,11 @@ class Customer extends Model
     public function getFullNameAttribute()
     {
         return $this->first_name . ' ' . $this->last_name;
+    }
+
+    public function getCustomerWithPhoneAttribute()
+    {
+        return $this->full_name . ' - ' . $this->phone;
     }
 
     public function shipping_address()

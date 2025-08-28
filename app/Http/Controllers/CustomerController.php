@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Customer\ValidationRequest;
@@ -9,7 +8,11 @@ class CustomerController extends Controller
 {
     public function dropDown()
     {
-        return Customer::whereHas("orders")->orderBy("id","desc")->get();
+        $allItem = ["id" => null, "customer_with_phone" => "All Customers"];
+
+        $data = Customer::whereHas("orders")->orderBy("id", "desc")->get()->toArray();
+
+        return [$allItem, ...$data];
     }
 
     /**
@@ -71,16 +74,16 @@ class CustomerController extends Controller
         $model = Customer::with("shipping_address", "billing_address")->where("phone", request("phone") ?? null)->first() ?? null;
 
         return [
-            "customer" => [
+            "customer"         => [
                 "first_name" => $model->first_name ?? null,
-                "last_name" => $model->last_name ?? null,
-                "email" => $model->email ?? null,
-                "dob" => $model->dob ?? null,
-                "phone" => $model->phone ?? null,
-                "whatsapp" => $model->whatsapp ?? null,
+                "last_name"  => $model->last_name ?? null,
+                "email"      => $model->email ?? null,
+                "dob"        => $model->dob ?? null,
+                "phone"      => $model->phone ?? null,
+                "whatsapp"   => $model->whatsapp ?? null,
             ],
             "shipping_address" => $model->shipping_address ?? null,
-            "billing_address" => $model->billing_address ?? null,
+            "billing_address"  => $model->billing_address ?? null,
         ];
     }
 }
