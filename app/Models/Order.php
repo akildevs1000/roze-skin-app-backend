@@ -45,10 +45,11 @@ class Order extends Model
         "items" => "array",
     ];
 
+    protected $appends = ['date_time', 'total_paid_amount', 'reference_id','status_class'];
+
     public static array $statuses = [
         ['id' => 'processing', 'name' => 'Processing'],
-        ['id' => 'shipped', 'name' => 'Shipped'],
-        ['id' => 'delivered', 'name' => 'Delivered'],
+        ['id' => 'completed', 'name' => 'Completed'],
         ['id' => 'cancelled', 'name' => 'Cancelled'],
         ['id' => 'refunded', 'name' => 'Refunded'],
     ];
@@ -67,6 +68,27 @@ class Order extends Model
     public function getStatusLabel(): string
     {
         return self::getStatusName($this->order_status);
+    }
+
+    /**
+     * Get the CSS class for the order status (for frontend usage)
+     */
+    public function getStatusClassAttribute()
+    {
+        switch (strtolower($this->order_status)) {
+            case 'processing':
+                return 'blue';
+            case 'paid':
+                return 'green lighten-3 text--darken-3';
+            case 'dispatched':
+                return 'blue lighten-3 text--darken-3';
+            case 'unpaid':
+                return 'red';
+            case 'cancelled':
+                return 'grey';
+            default:
+                return 'grey lighten-4 text--darken-3';
+        }
     }
 
     public function customer()
@@ -95,7 +117,6 @@ class Order extends Model
             );
     }
 
-    protected $appends = ['date_time', 'total_paid_amount', 'reference_id'];
 
     public function getReferenceIdAttribute()
     {

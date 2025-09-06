@@ -104,7 +104,6 @@ class OrderController extends Controller
             return;
         }
 
-        $status       = request('status');
         $order_status = request('order_status');
 
         $customer_id = request('customer_id');
@@ -118,15 +117,15 @@ class OrderController extends Controller
 
         $dates = [$from, $to];
 
-        $perPage = min((int) request('per_page', 15), 100); // Limit max results per page
+        $perPage = request('per_page', 15); // Limit max results per page
 
         return Order::orderByDesc('id')
             ->when($search, function ($q) use ($search) {
                 $q->where('order_id', $search);
             })
-            ->when($status, function ($q) use ($status) {
-                $q->whereHas("invoice", fn($q) => $q->where('status', $status));
-            })
+            // ->when($order_status != "completed", function ($q) use ($order_status) {
+            //     $q->whereHas("invoice", fn($q) => $q->where('status', $order_status));
+            // })
 
             ->when($customer_id, function ($q) use ($customer_id) {
                 $q->where('customer_id', $customer_id);
@@ -150,7 +149,8 @@ class OrderController extends Controller
 
             ->whereBetween('order_date', $dates)
 
-            ->with(['business_source', 'delivery_service', "invoice"])
+            ->with(['business_source', 'delivery_service','invoice'])
+
             ->paginate($perPage);
     }
 

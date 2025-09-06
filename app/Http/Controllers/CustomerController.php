@@ -24,9 +24,10 @@ class CustomerController extends Controller
     {
         return Customer::with(["orders", "billing_address", "shipping_address"])
             ->withCount("orders")
+            ->withSum("orders", "total")
             ->where("first_name", "LIKE", "%" . request("search", null) . "%")
             ->orderByDesc("id")
-            ->paginate(request("per_page", 1000));
+            ->paginate(request("per_page", 10));
     }
 
     /**
