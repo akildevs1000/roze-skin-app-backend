@@ -28,8 +28,8 @@ class MenuController extends Controller
                 'name'  => 'products',
             ],
             [
-                'label' => 'Report',
-                'name'  => 'report',
+                'label' => 'Accounts',
+                'name'  => 'accounts',
             ],
             [
                 'label' => 'Settings',
@@ -85,12 +85,12 @@ class MenuController extends Controller
                 'menu'    => 'source_access',
             ],
             [
-                'topMenu' => 'report',
+                'topMenu' => 'accounts',
                 'icon'    => 'mdi-file-document-outline',
-                'module'  => 'report',
-                'title'   => 'Report',
-                'to'      => '/report',
-                'menu'    => 'report_access',
+                'module'  => 'accounts',
+                'title'   => 'Accounts',
+                'to'      => '/accounts',
+                'menu'    => 'accounts_access',
             ],
             [
                 'topMenu' => 'settings',

@@ -22,12 +22,71 @@ class CustomerController extends Controller
      */
     public function index()
     {
-        return Customer::with(["orders", "billing_address", "shipping_address"])
+        $order_status        = request('order_status');
+        $customer_id         = request('customer_id');
+        $business_source_id  = request('business_source_id');
+        $delivery_service_id = request('delivery_service_id');
+        $payment_method      = request('payment_method');
+
+        $from = request('from') ? request('from') . " 00:00:00" : date("Y-m-d 00:00:00");
+        $to   = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
+
+        $dates = [$from, $to];
+
+        $perPage = request('per_page', 15); // default 15 per page
+
+        return Customer::query()
+            ->orderByDesc('id')
+
+        // ✅ Fix: Use id instead of customer_id
+            ->when($customer_id, function ($q) use ($customer_id) {
+                $q->where('id', $customer_id);
+            })
+
+        // ✅ Apply filters on orders relation
+            ->when($order_status, function ($q) use ($order_status) {
+                $q->whereHas("orders", fn($q) => $q->where('order_status', $order_status));
+            })
+            ->when($business_source_id, function ($q) use ($business_source_id) {
+                $q->whereHas("orders", fn($q) => $q->where('business_source_id', $business_source_id));
+            })
+            ->when($delivery_service_id, function ($q) use ($delivery_service_id) {
+                $q->whereHas("orders", fn($q) => $q->where('delivery_service_id', $delivery_service_id));
+            })
+            ->when($payment_method, function ($q) use ($payment_method) {
+                $q->whereHas("orders", fn($q) => $q->where('payment_method', $payment_method));
+            })
+
+        // ✅ Always filter orders by date
+            ->whereHas("orders", fn($q) => $q->whereBetween('order_date', $dates))
+
+        // ✅ Eager load relations
+            ->with([
+                "orders" => function ($q) use ($dates, $order_status, $business_source_id, $delivery_service_id, $payment_method) {
+                    $q->whereBetween('order_date', $dates);
+
+                    if ($order_status) {
+                        $q->where('order_status', $order_status);
+                    }
+                    if ($business_source_id) {
+                        $q->where('business_source_id', $business_source_id);
+                    }
+                    if ($delivery_service_id) {
+                        $q->where('delivery_service_id', $delivery_service_id);
+                    }
+                    if ($payment_method) {
+                        $q->where('payment_method', $payment_method);
+                    }
+                },
+                "billing_address",
+                "shipping_address",
+            ])
+
+        // ✅ Aggregates
             ->withCount("orders")
             ->withSum("orders", "total")
-            ->where("first_name", "LIKE", "%" . request("search", null) . "%")
-            ->orderByDesc("id")
-            ->paginate(request("per_page", 10));
+
+            ->paginate($perPage);
     }
 
     /**
