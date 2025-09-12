@@ -2,7 +2,6 @@
 namespace App\Console\Commands;
 
 use App\Models\Order;
-use Carbon\Carbon;
 use Illuminate\Console\Command;
 
 class MarkOrdersCompleted extends Command
@@ -34,8 +33,13 @@ class MarkOrdersCompleted extends Command
         $this->info($endOfMonth);
 
         $orders = Order::whereHas('invoice')
+            ->whereNotIn("order_status", ["completed","cancelled"])
             ->whereBetween('order_date', [$startOfMonth, $endOfMonth])
             ->get();
+
+        $this->info("Total Orders Found: " . count($orders));
+
+        if(count($orders) == 0) return 0;
 
         $count = 0;
 
@@ -44,7 +48,7 @@ class MarkOrdersCompleted extends Command
                 $order->order_status = 'completed';
                 $order->save();
                 $count++;
-            } 
+            }
         }
 
         $this->info("$count orders marked as completed.");
