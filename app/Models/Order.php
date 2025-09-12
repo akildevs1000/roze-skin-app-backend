@@ -2,12 +2,15 @@
 namespace App\Models;
 
 use App\Traits\HasReferenceId;
+use Carbon\CarbonPeriod;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
 {
     use HasFactory, HasReferenceId;
+
+    const CANCELLED = "cancelled";
 
     protected $fillable = [
         "customer_id",
@@ -45,7 +48,7 @@ class Order extends Model
         "items" => "array",
     ];
 
-    protected $appends = ['date_time', 'total_paid_amount', 'reference_id','status_class'];
+    protected $appends = ['date_time', 'total_paid_amount', 'reference_id', 'status_class'];
 
     public static array $statuses = [
         ['id' => 'processing', 'name' => 'Processing'],
@@ -87,7 +90,7 @@ class Order extends Model
             case 'cancelled':
                 return 'grey';
             default:
-                return 'grey lighten-4 text--darken-3';
+                return 'green  text--darken-3';
         }
     }
 
