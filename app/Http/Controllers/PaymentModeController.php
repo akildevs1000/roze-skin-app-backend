@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\PaymentMode;
@@ -23,8 +22,6 @@ class PaymentModeController extends Controller
             ->paginate(request("per_page"));
     }
 
-
-
     /**
      * Store a newly created resource in storage.
      *
@@ -34,7 +31,7 @@ class PaymentModeController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            "name" => "required|max:255",
+            "name"        => "required|max:255",
             "description" => "required",
         ]);
 
@@ -51,7 +48,7 @@ class PaymentModeController extends Controller
     public function update(Request $request, PaymentMode $PaymentMode)
     {
         $validated = $request->validate([
-            "name" => "required|max:255",
+            "name"        => "required|max:255",
             "description" => "required",
         ]);
 
@@ -69,5 +66,20 @@ class PaymentModeController extends Controller
         $PaymentMode->delete();
 
         return response()->json();
+    }
+
+    public function report()
+    {
+        $payment_method = request('payment_method');
+        $from = request('from') ? request('from') . " 00:00:00" : date("Y-m-d 00:00:00");
+        $to   = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
+        $dates = [$from, $to];
+
+        return PaymentMode::query()
+            ->whereHas("orders", fn($q) => $q->where('payment_method', $payment_method))
+            ->whereHas("orders", fn($q) => $q->whereBetween('order_date', $dates))
+            ->withCount("orders")
+            ->withSum("orders", "total")
+            ->get();
     }
 }

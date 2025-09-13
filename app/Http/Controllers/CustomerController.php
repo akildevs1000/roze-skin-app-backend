@@ -146,4 +146,93 @@ class CustomerController extends Controller
             "billing_address"  => $model->billing_address ?? null,
         ];
     }
+
+    public function report()
+    {
+        $customer_id = request('customer_id');
+
+        $from = request('from') ? request('from') . " 00:00:00" : date("Y-m-d 00:00:00");
+        $to   = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
+
+        $dates = [$from, $to];
+
+        return Customer::query()
+            ->orderByDesc('id')
+
+        // ✅ Fix: Use id instead of customer_id
+            ->when($customer_id, function ($q) use ($customer_id) {
+                $q->where('id', $customer_id);
+            })
+
+        // ✅ Always filter orders by date
+            ->whereHas("orders", fn($q) => $q->whereBetween('order_date', $dates))
+
+        // ✅ Eager load relations
+            ->with([
+                "orders" => function ($q) use ($dates) {
+                    $q->whereBetween('order_date', $dates);
+
+                },
+                "billing_address",
+                "shipping_address",
+            ])
+
+        // ✅ Aggregates
+            ->withCount("orders")
+            ->withSum("orders", "total")
+
+            ->get();
+    }
+
+    public function repeatedCustomerReport()
+    {
+        $customer_id = request('customer_id');
+
+        $from = request('from') ? request('from') . " 00:00:00" : date("Y-m-d 00:00:00");
+        $to   = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
+
+        $dates = [$from, $to];
+
+        return Customer::query()
+
+        // ✅ Fix: Use id instead of customer_id
+            ->when($customer_id, function ($q) use ($customer_id) {
+                $q->where('id', $customer_id);
+            })
+
+        // ✅ Always filter orders by date
+            ->whereHas('orders', function ($q) use ($dates) {
+                $q->whereBetween('order_date', $dates);
+            }, '>', 1)
+
+        // ✅ Eager load relations
+            ->with([
+                "orders" => function ($q) use ($dates) {
+                    $q->whereBetween('order_date', $dates);
+
+                },
+                "billing_address",
+                "shipping_address",
+            ])
+
+        // ✅ Aggregates
+            ->withCount([
+                'orders as orders_count' => function ($q) use ($customer_id, $dates) {
+                    $q->whereBetween('order_date', $dates);
+                    if ($customer_id) {
+                        $q->where('customer_id', $customer_id);
+                    }
+                },
+            ])
+            ->withSum([
+                'orders as orders_sum_total' => function ($q) use ($customer_id, $dates) {
+                    $q->whereBetween('order_date', $dates);
+                    if ($customer_id) {
+                        $q->where('customer_id', $customer_id);
+                    }
+                },
+            ], 'total')
+
+            ->get();
+    }
 }

@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\DeliveryService;
@@ -23,8 +22,6 @@ class DeliveryServiceController extends Controller
             ->paginate(request("per_page"));
     }
 
-
-
     /**
      * Store a newly created resource in storage.
      *
@@ -34,7 +31,7 @@ class DeliveryServiceController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            "name" => "required|max:255",
+            "name"        => "required|max:255",
             "description" => "required",
         ]);
 
@@ -51,7 +48,7 @@ class DeliveryServiceController extends Controller
     public function update(Request $request, DeliveryService $DeliveryService)
     {
         $validated = $request->validate([
-            "name" => "required|max:255",
+            "name"        => "required|max:255",
             "description" => "required",
         ]);
 
@@ -69,5 +66,20 @@ class DeliveryServiceController extends Controller
         $DeliveryService->delete();
 
         return response()->json();
+    }
+
+    public function report()
+    {
+        $delivery_service_id = request('delivery_service_id');
+        $from = request('from') ? request('from') . " 00:00:00" : date("Y-m-d 00:00:00");
+        $to   = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
+        $dates = [$from, $to];
+
+        return DeliveryService::query()
+            ->whereHas("orders", fn($q) => $q->where('delivery_service_id', $delivery_service_id))
+            ->whereHas("orders", fn($q) => $q->whereBetween('order_date', $dates))
+            ->withCount("orders")
+            ->withSum("orders", "total")
+            ->get();
     }
 }

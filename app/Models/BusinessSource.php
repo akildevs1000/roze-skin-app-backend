@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use App\Models\Scopes\OrderByUpdatedAt;
@@ -28,5 +27,15 @@ class BusinessSource extends Model
         // example usage in controller to disable
         // YourModel::withoutGlobalScope('orderByUpdatedAt')->get();
 
+    }
+
+    /**
+     * Get all of the comments for the BusinessSource
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
     }
 }

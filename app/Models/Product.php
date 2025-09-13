@@ -43,4 +43,14 @@ class Product extends Model
     {
         return date("d-M-y h:i:sa", strtotime($this->created_at));
     }
+
+    /**
+     * Get all of the orders for the Product
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
 }

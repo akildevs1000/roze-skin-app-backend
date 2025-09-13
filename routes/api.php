@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BusinessSourceController;
+use App\Http\Controllers\CityController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DeliveryServiceController;
 use App\Http\Controllers\InvoiceController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentModeController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WhatsappClientController;
 use Illuminate\Support\Facades\Log;
@@ -83,3 +85,16 @@ Route::get('/whatsapp-all-clients', [WhatsappClientController::class, 'list']);
 Route::resource('template', TemplateController::class);
 Route::get('template-list', [TemplateController::class, "dropDown"]);
 Route::get('template-types', [TemplateController::class, "templateTypes"]);
+
+Route::get('report-products', [ReportController::class, "products"]);
+Route::get('report-payment-modes', [ReportController::class, "payment_modes"]);
+Route::get('report-sources', [ReportController::class, "sources"]);
+
+
+Route::get('product-report', [ProductController::class, "report"]);
+Route::get('source-report', [BusinessSourceController::class, "report"]);
+Route::get('deliver-service-report', [DeliveryServiceController::class, "report"]);
+Route::get('payment-mode-report', [PaymentModeController::class, "report"]);
+Route::get('city-report', [CityController::class, "report"]);
+Route::get('customer-report', [CustomerController::class, "report"]);
+Route::get('repeated-customer-report', [CustomerController::class, "repeatedCustomerReport"]);
