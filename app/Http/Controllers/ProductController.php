@@ -105,29 +105,34 @@ class ProductController extends Controller
         $dates      = [$from, $to];
 
         return Product::query()
-            ->with("product_category")
             ->when($product_id, function ($query, $id) {
-                $query->whereHas("orders", fn($q) => $q->where('product_id', $id));
+                $query->whereHas("order_items", fn($q) => $q->where('product_id', $id));
             })
-            // ->whereHas("orders", fn($q) => $q->whereBetween('order_date', $dates))
-            // ->withCount([
-            //     'orders as orders_count' => function ($q) use ($product_id, $dates) {
+            ->whereHas("order_items", fn($q) => $q->whereBetween('order_date', $dates))
+            ->withCount([
+                'order_items as orders_count' => function ($q) use ($product_id, $dates) {
+                    $q->whereBetween('order_date', $dates);
+                    if ($product_id) {
+                        $q->where('product_id', $product_id);
+                    }
+                },
+            ])
+            ->withSum([
+                'order_items as orders_sum_total' => function ($q) use ($product_id, $dates) {
+                    $q->whereBetween('order_date', $dates);
+                    if ($product_id) {
+                        $q->where('product_id', $product_id);
+                    }
+                },
+            ], 'rate')
+            // ->with([
+            //     'order_items' => function ($q) use ($product_id, $dates) {
             //         $q->whereBetween('order_date', $dates);
             //         if ($product_id) {
             //             $q->where('product_id', $product_id);
             //         }
             //     },
             // ])
-            // ->withSum([
-            //     'orders as orders_sum_total' => function ($q) use ($product_id, $dates) {
-            //         $q->whereBetween('order_date', $dates);
-            //         if ($product_id) {
-            //             $q->where('product_id', $product_id);
-            //         }
-            //     },
-            // ], 'total')
-            // ->withCount("orders")
-            // ->withSum("orders", "total")
             ->get();
     }
 }

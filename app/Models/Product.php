@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,7 +21,7 @@ class Product extends Model
         return $this->belongsTo(ProductCategory::class);
     }
 
-    protected $appends = ['date_time', 'product_with_item_name','display_image'];
+    protected $appends = ['date_time', 'product_with_item_name', 'display_image'];
 
     public function getProductWithItemNameAttribute()
     {
@@ -32,7 +31,7 @@ class Product extends Model
 
     public function getDisplayImageAttribute()
     {
-        if (!$this->image) {
+        if (! $this->image) {
             return null;
         }
 
@@ -52,5 +51,10 @@ class Product extends Model
     public function orders()
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function order_items()
+    {
+        return $this->hasMany(OrderItem::class);
     }
 }

@@ -57,6 +57,7 @@ class InsertOrderItems extends Command
                 'product_id' => $item['product_id'] ?? 0, // default to 0 if null
                 'quantity'   => $item['quantity'],
                 'rate'       => $item['rate'],
+                'order_date' => $item['order_date'],
                 'created_at' => now(),
                 'updated_at' => now(),
             ])->toArray();
@@ -74,7 +75,7 @@ class InsertOrderItems extends Command
         $orders = Order::query()
             ->without('customer')
             ->latest('id')
-            ->get(['order_id', 'items']);
+            ->get(['order_id', 'order_date', 'items']);
 
         if ($orders->isEmpty()) {
             return collect();
@@ -97,7 +98,7 @@ class InsertOrderItems extends Command
                 // If product doesn't exist, create it
                 if (! isset($products[$description])) {
                     $product = Product::create([
-                        'name' => $description,
+                        'name'        => $description,
                         'description' => $description,
                         // add other default fields if required
                     ]);
@@ -108,6 +109,7 @@ class InsertOrderItems extends Command
                     'quantity'   => $item['quantity'] ?? 0,
                     'rate'       => $item['rate'] ?? 0,
                     'order_id'   => $order->order_id,
+                    'order_date' => date("Y-m-d H:i:s", strtotime($order->order_date)) ?? now(),
                     'product_id' => $products[$description],
                 ];
             });
