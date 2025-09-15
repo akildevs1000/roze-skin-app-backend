@@ -133,6 +133,7 @@ class ProductController extends Controller
             //         }
             //     },
             // ])
+            ->with("product_category")
             ->get();
     }
 }
