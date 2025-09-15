@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -104,11 +105,15 @@ class ProductController extends Controller
         $to         = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
         $dates      = [$from, $to];
 
+        $orderIds = Order::whereBetween("order_date", $dates)->whereNotIn("order_status", ["cancelled"])->pluck("order_id");
+
         return Product::query()
             ->when($product_id, function ($query, $id) {
                 $query->whereHas("order_items", fn($q) => $q->where('product_id', $id));
             })
-            ->whereHas("orders", fn($q) => $q->whereBetween('order_date', $dates)->whereNotIn("order_status", ["cancelled"]))
+            ->whereHas("order_items", function ($q) use ($orderIds) {
+                $q->whereIn('order_id', $orderIds);
+            })
             ->withCount([
                 'order_items as orders_count' => function ($q) use ($product_id, $dates) {
                     $q->whereBetween('order_date', $dates);
