@@ -1,7 +1,6 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Models\Customer;
 use App\Models\Order;
 
 class CityController extends Controller
@@ -25,15 +24,15 @@ class CityController extends Controller
 
     public function report()
     {
-        $city = $this->getCities()[request('city',null)];
-        
+        $city = $this->getCities()[request('city', null)];
+
         $from = request('from') ? request('from') . " 00:00:00" : date("Y-m-d 00:00:00");
         $to   = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
 
         return Order::query()
             ->whereBetween('order_date', [$from, $to])
             ->whereHas('customer.shipping_address', function ($q) use ($city) {
-                if ($city && $city !== "Select All") {
+                if ($city) {
                     $q->where('city', $city);
                 }
             })
@@ -47,20 +46,20 @@ class CityController extends Controller
             ->get();
     }
 
-    
-
     public function getCities(): array
     {
         return [
-            'AUH' => 'Abu Dhabi',
-            'AJM' => 'Ajman',
-            'ALN' => 'Al Ain',
-            'DXB' => 'Dubai',
-            'FUJ' => 'Fujairah',
-            'DXJ' => 'Jebel Ali',
-            'RAK' => 'Ras Al Khaimah',
-            'SHJ' => 'Sharjah',
-            'UAQ' => 'Umm Al Quwain',
+            'Select All'     => null,
+            null             => null,
+            'Abu Dhabi'      => 'AUH',
+            'Ajman'          => 'AJM',
+            'Al Ain'         => 'ALN',
+            'Dubai'          => 'DXB',
+            'Fujairah'       => 'FUJ',
+            'Jebel Ali'      => 'DXJ',
+            'Ras Al Khaimah' => 'RAK',
+            'Sharjah'        => 'SHJ',
+            'Umm Al Quwain'  => 'UAQ',
         ];
     }
 
