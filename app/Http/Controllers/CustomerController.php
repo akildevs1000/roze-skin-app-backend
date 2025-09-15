@@ -203,13 +203,14 @@ class CustomerController extends Controller
         // ✅ Always filter orders by date
             ->whereHas('orders', function ($q) use ($dates) {
                 $q->whereBetween('order_date', $dates);
+                $q->whereNotIn("order_status", ["cancelled"]);
             }, '>', 1)
 
         // ✅ Eager load relations
             ->with([
                 "orders" => function ($q) use ($dates) {
                     $q->whereBetween('order_date', $dates);
-
+                    $q->whereNotIn("order_status", ["cancelled"]);
                 },
                 "billing_address",
                 "shipping_address",
@@ -219,6 +220,7 @@ class CustomerController extends Controller
             ->withCount([
                 'orders as orders_count' => function ($q) use ($customer_id, $dates) {
                     $q->whereBetween('order_date', $dates);
+                    $q->whereNotIn("order_status", ["cancelled"]);
                     if ($customer_id) {
                         $q->where('customer_id', $customer_id);
                     }
@@ -227,6 +229,7 @@ class CustomerController extends Controller
             ->withSum([
                 'orders as orders_sum_total' => function ($q) use ($customer_id, $dates) {
                     $q->whereBetween('order_date', $dates);
+                    $q->whereNotIn("order_status", ["cancelled"]);
                     if ($customer_id) {
                         $q->where('customer_id', $customer_id);
                     }

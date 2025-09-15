@@ -70,16 +70,37 @@ class PaymentModeController extends Controller
 
     public function report()
     {
+        // ->whereNotIn("order_status", ["cancelled"])
+
         $payment_method = request('payment_method');
-        $from = request('from') ? request('from') . " 00:00:00" : date("Y-m-d 00:00:00");
-        $to   = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
-        $dates = [$from, $to];
+        $from           = request('from') ? request('from') . " 00:00:00" : date("Y-m-d 00:00:00");
+        $to             = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
+        $dates          = [$from, $to];
 
         return PaymentMode::query()
-            ->whereHas("orders", fn($q) => $q->where('payment_method', $payment_method))
+            
+              ->when($payment_method, function ($query, $id) {
+                $query->whereHas("orders", fn($q) => $q->where('payment_method', $id));
+            })
             ->whereHas("orders", fn($q) => $q->whereBetween('order_date', $dates))
-            ->withCount("orders")
-            ->withSum("orders", "total")
+            ->withCount([
+                'orders as orders_count' => function ($q) use ($payment_method, $dates) {
+                    $q->whereBetween('order_date', $dates);
+                    $q->whereNotIn("order_status", ["cancelled"]);
+                    if ($payment_method) {
+                        $q->where('payment_method', $payment_method);
+                    }
+                },
+            ])
+            ->withSum([
+                'orders as orders_sum_total' => function ($q) use ($payment_method, $dates) {
+                    $q->whereBetween('order_date', $dates);
+                    $q->whereNotIn("order_status", ["cancelled"]);
+                    if ($payment_method) {
+                        $q->where('payment_method', $payment_method);
+                    }
+                },
+            ], 'total')
             ->get();
     }
 }

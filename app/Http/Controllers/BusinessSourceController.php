@@ -79,10 +79,11 @@ class BusinessSourceController extends Controller
             ->when($business_source_id, function ($query, $id) {
                 $query->whereHas("orders", fn($q) => $q->where('business_source_id', $id));
             })
-            ->whereHas("orders", fn($q) => $q->whereBetween('order_date', $dates))
+            ->whereHas("orders", fn($q) => $q->whereBetween('order_date', $dates)->whereNotIn("order_status", ["cancelled"]))
             ->withCount([
                 'orders as orders_count' => function ($q) use ($business_source_id, $dates) {
                     $q->whereBetween('order_date', $dates);
+                    $q->whereNotIn("order_status", ["cancelled"]);
                     if ($business_source_id) {
                         $q->where('business_source_id', $business_source_id);
                     }
@@ -91,6 +92,7 @@ class BusinessSourceController extends Controller
             ->withSum([
                 'orders as orders_sum_total' => function ($q) use ($business_source_id, $dates) {
                     $q->whereBetween('order_date', $dates);
+                    $q->whereNotIn("order_status", ["cancelled"]);
                     if ($business_source_id) {
                         $q->where('business_source_id', $business_source_id);
                     }

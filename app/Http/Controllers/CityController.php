@@ -30,6 +30,7 @@ class CityController extends Controller
         $to   = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
 
         return Order::query()
+            ->whereNotIn("order_status", ["cancelled"])
             ->whereBetween('order_date', [$from, $to])
             ->whereHas('customer.shipping_address', function ($q) use ($city) {
                 if ($city) {

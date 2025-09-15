@@ -73,6 +73,7 @@ class InsertOrderItems extends Command
     public function getItemsWithOrderId()
     {
         $orders = Order::query()
+            ->whereNotIn("order_status", ["cancelled"])
             ->without('customer')
             ->latest('id')
             ->get(['order_id', 'order_date', 'items']);
@@ -114,6 +115,9 @@ class InsertOrderItems extends Command
                 ];
             });
         });
+
+        // $this->info(json_encode($items, JSON_PRETTY_PRINT));
+        // die;
 
         return $items;
     }

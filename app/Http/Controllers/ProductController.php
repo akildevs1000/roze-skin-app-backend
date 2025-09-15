@@ -108,7 +108,7 @@ class ProductController extends Controller
             ->when($product_id, function ($query, $id) {
                 $query->whereHas("order_items", fn($q) => $q->where('product_id', $id));
             })
-            ->whereHas("order_items", fn($q) => $q->whereBetween('order_date', $dates))
+            ->whereHas("orders", fn($q) => $q->whereBetween('order_date', $dates)->whereNotIn("order_status", ["cancelled"]))
             ->withCount([
                 'order_items as orders_count' => function ($q) use ($product_id, $dates) {
                     $q->whereBetween('order_date', $dates);
@@ -125,14 +125,6 @@ class ProductController extends Controller
                     }
                 },
             ], 'rate')
-            // ->with([
-            //     'order_items' => function ($q) use ($product_id, $dates) {
-            //         $q->whereBetween('order_date', $dates);
-            //         if ($product_id) {
-            //             $q->where('product_id', $product_id);
-            //         }
-            //     },
-            // ])
             ->with("product_category")
             ->get();
     }
