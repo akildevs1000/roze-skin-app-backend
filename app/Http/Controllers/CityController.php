@@ -1,15 +1,14 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\Order;
 
 class CityController extends Controller
 {
     public function dropDown()
     {
-        $allItem = ["id" => null, "name" => "Cirty"];
-
-        $locations = [
+        return [
             ["value" => null, "label" => "Select All"],
             ["value" => "AUH", "label" => "Abu Dhabi"],
             ["value" => "AJM", "label" => "Ajman"],
@@ -26,7 +25,8 @@ class CityController extends Controller
 
     public function report()
     {
-        $city = request('city');
+        $city = $this->getCities()[request('city',null)];
+        
         $from = request('from') ? request('from') . " 00:00:00" : date("Y-m-d 00:00:00");
         $to   = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
 
@@ -45,6 +45,23 @@ class CityController extends Controller
             ->groupBy('shipping_addresses.city')
             ->selectRaw('shipping_addresses.city, COUNT(orders.id) as orders_count, SUM(orders.total) as orders_sum_total')
             ->get();
+    }
+
+    
+
+    public function getCities(): array
+    {
+        return [
+            'AUH' => 'Abu Dhabi',
+            'AJM' => 'Ajman',
+            'ALN' => 'Al Ain',
+            'DXB' => 'Dubai',
+            'FUJ' => 'Fujairah',
+            'DXJ' => 'Jebel Ali',
+            'RAK' => 'Ras Al Khaimah',
+            'SHJ' => 'Sharjah',
+            'UAQ' => 'Umm Al Quwain',
+        ];
     }
 
 }
