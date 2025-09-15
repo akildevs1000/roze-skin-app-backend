@@ -43,12 +43,16 @@ class ReportController extends Controller
                     }
                 }
 
-                $data[date("d M",strtotime($date))][$product->item_number] = [
-                    'item_code' => $product->item_number,
-                    'product'   => $product->item_number,
-                    'price'     => number_format($totalPrice, 2),
-                    'quantity'  => $totalQuantity,
-                ];
+                if ($product->item_number) {
+
+                    $data[date("d M", strtotime($date))][$product->item_number] = [
+                        'item_code' => $product->item_number,
+                        'product'   => $product->item_number,
+                        'price'     => number_format($totalPrice, 2),
+                        'quantity'  => $totalQuantity,
+                    ];
+                }
+
             }
         }
 
