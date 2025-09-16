@@ -32,8 +32,8 @@ class OrderController extends Controller
             ->value('order_id');
 
         return $orderId
-        ? Order::with(['business_source', 'delivery_service', 'invoice'])->find($orderId)
-        : null;
+            ? Order::with(['business_source', 'delivery_service', 'invoice'])->find($orderId)
+            : null;
     }
 
     public function orderCreateAcknowledge()
@@ -123,9 +123,9 @@ class OrderController extends Controller
             ->when($search, function ($q) use ($search) {
                 $q->where('order_id', $search);
             })
-            // ->when($order_status != "completed", function ($q) use ($order_status) {
-            //     $q->whereHas("invoice", fn($q) => $q->where('status', $order_status));
-            // })
+        // ->when($order_status != "completed", function ($q) use ($order_status) {
+        //     $q->whereHas("invoice", fn($q) => $q->where('status', $order_status));
+        // })
 
             ->when($customer_id, function ($q) use ($customer_id) {
                 $q->where('customer_id', $customer_id);
@@ -149,7 +149,7 @@ class OrderController extends Controller
 
             ->whereBetween('order_date', $dates)
 
-            ->with(['business_source', 'delivery_service','invoice'])
+            ->with(['business_source', 'delivery_service', 'invoice'])
 
             ->paginate($perPage);
     }
@@ -211,6 +211,8 @@ class OrderController extends Controller
 
         $validatedData = $request->validated();
 
+        $order_date = request("order_date", date("Y-m-d")) . " "  . date("H:i:s");
+
         if ($validatedData['order_id'] > 0 && Order::where('order_id', $validatedData['order_id'])->exists()) {
 
             $response = [
@@ -224,7 +226,7 @@ class OrderController extends Controller
 
         $customer                     = Customer::storeOrUpdateCustomerWithAddresses($validatedData);
         $validatedData["customer_id"] = $customer->id ?? 0;
-        $validatedData["order_date"]  = date("Y-m-d H:i:s");
+        $validatedData["order_date"]  =  $order_date ;
         $order                        = Order::create($validatedData);
 
         $templates = Template::whereActionId(["action_id" => Template::ORDER_RECEIVED])->orderBy("id", "desc")->get();
@@ -489,11 +491,9 @@ class OrderController extends Controller
         $query->whereDate('created_at', '>=', $from ?? date("Y-m-01"));
         $query->whereDate('created_at', '<=', $to ?? date("Y-m-t"));
 
-        $totalOrders = $query->clone()->whereNot("order_status", "cancelled")->count();
+        $totalOrders     = $query->clone()->whereNot("order_status", "cancelled")->count();
         $cancelledOrders = $query->clone()->where("order_status", "cancelled")->count();
-        $totalOrdersSum = $query->sum("total");
-
-
+        $totalOrdersSum  = $query->sum("total");
 
         return [
             [
@@ -511,7 +511,7 @@ class OrderController extends Controller
             [
                 'label' => 'Total (Income)',
                 'icon'  => 'mdi-currency-usd',
-                'value' => $totalOrdersSum ,
+                'value' => $totalOrdersSum,
                 'color' => 'green',
             ],
         ];
