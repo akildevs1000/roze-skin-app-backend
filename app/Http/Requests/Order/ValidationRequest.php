@@ -48,7 +48,7 @@ class ValidationRequest extends FormRequest
             'username' => 'nullable|string',
             'email' => 'nullable|email',
             'order_id' => 'required|integer',
-            'order_date' => 'required|date_format:Y-m-d H:i:s',
+            'order_date' => 'required|date_format:Y-m-d',
             'order_status' => 'required',
             'currency' => 'required|string',
             'shipping_charges' => 'required|numeric',
