@@ -6,6 +6,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
@@ -60,7 +61,12 @@ class ProductController extends Controller
             "description"         => "required|min:5|max:255",
             "price"               => "numeric|required",
             "product_category_id" => "required",
-            "item_number"         => "required|min:5|max:100",
+            "item_number"         => [
+                "required",
+                "min:5",
+                "max:100",
+                Rule::unique('products', 'item_number')->ignore($request->id),
+            ],
             "qty"                 => "required|numeric|min:1|max:1000",
             "image"               => "nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048",
             "purchase_price"      => "required",
