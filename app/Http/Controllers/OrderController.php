@@ -211,7 +211,7 @@ class OrderController extends Controller
 
         $validatedData = $request->validated();
 
-        $order_date = request("order_date", date("Y-m-d")) . " "  . date("H:i:s");
+        $order_date = request("order_date", date("Y-m-d H:i:s"));
 
         if ($validatedData['order_id'] > 0 && Order::where('order_id', $validatedData['order_id'])->exists()) {
 
