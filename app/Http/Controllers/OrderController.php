@@ -205,70 +205,76 @@ class OrderController extends Controller
 
     public function store(ValidationRequest $request)
     {
-        // order_id => 53449
-        // create order with same order id from website
-        // https://rozeskin.com/checkout/order-received/53449/?key=wc_order_Wa2sCxZ1pCSJY
+        try {
 
-        $validatedData = $request->validated();
+            // order_id => 53449
+            // create order with same order id from website
+            // https://rozeskin.com/checkout/order-received/53449/?key=wc_order_Wa2sCxZ1pCSJY
 
-        $order_date = request("order_date", date("Y-m-d H:i:s"));
+            $validatedData = $request->validated();
 
-        if ($validatedData['order_id'] > 0 && Order::where('order_id', $validatedData['order_id'])->exists()) {
+            $order_date = request("order_date", date("Y-m-d H:i:s"));
 
-            $response = [
-                'message' => 'Order Id ' . $validatedData['order_id'] . ' already exists.',
-            ];
+            if ($validatedData['order_id'] > 0 && Order::where('order_id', $validatedData['order_id'])->exists()) {
 
-            Log::channel('orders')->info(json_encode(["request" => $request->all(), "response" => $response], JSON_PRETTY_PRINT));
-
-            return response()->json($response, 409);
-        }
-
-        $customer                     = Customer::storeOrUpdateCustomerWithAddresses($validatedData);
-        $validatedData["customer_id"] = $customer->id ?? 0;
-        $validatedData["order_date"]  =  $order_date ;
-        $order                        = Order::create($validatedData);
-
-        $templates = Template::whereActionId(["action_id" => Template::ORDER_RECEIVED])->orderBy("id", "desc")->get();
-
-        if (! count($templates)) {
-            return $order;
-        }
-
-        $responses = [];
-
-        $arr = $this->prepareMessage($templates, $customer, $order);
-
-        if ($arr["whatsapp"]) {
-            $normalizePhoneNumber = $this->normalizePhoneNumber($customer->whatsapp);
-            if ($normalizePhoneNumber) {
-                $whatsappPayload = [
-                    'recipient' => $normalizePhoneNumber,
-                    'text'      => $arr["whatsapp"],
-                    'clientId'  => $this->getClient(),
+                $response = [
+                    'message' => 'Order Id ' . $validatedData['order_id'] . ' already exists.',
                 ];
 
-                WhastappSender::dispatch($whatsappPayload);
+                Log::channel('orders')->info(json_encode(["request" => $request->all(), "response" => $response], JSON_PRETTY_PRINT));
 
-                $responses[] = ["whatsapp" => $whatsappPayload];
+                return response()->json($response, 409);
             }
+
+            $customer                     = Customer::storeOrUpdateCustomerWithAddresses($validatedData);
+            $validatedData["customer_id"] = $customer->id ?? 0;
+            $validatedData["order_date"]  = $order_date;
+            $order                        = Order::create($validatedData);
+
+            $templates = Template::whereActionId(["action_id" => Template::ORDER_RECEIVED])->orderBy("id", "desc")->get();
+
+            if (! count($templates)) {
+                return $order;
+            }
+
+            $responses = [];
+
+            $arr = $this->prepareMessage($templates, $customer, $order);
+
+            if ($arr["whatsapp"]) {
+                $normalizePhoneNumber = $this->normalizePhoneNumber($customer->whatsapp);
+                if ($normalizePhoneNumber) {
+                    $whatsappPayload = [
+                        'recipient' => $normalizePhoneNumber,
+                        'text'      => $arr["whatsapp"],
+                        'clientId'  => $this->getClient(),
+                    ];
+
+                    WhastappSender::dispatch($whatsappPayload);
+
+                    $responses[] = ["whatsapp" => $whatsappPayload];
+                }
+            }
+
+            if ($arr["email"]) {
+                $emailPayload = [
+                    'recipient' => $customer->email,
+                    'text'      => $arr["email"],
+                    'subject'   => "Order Received",
+                ];
+
+                SendEmail::dispatch($emailPayload);
+
+                $responses[] = ["email" => $emailPayload];
+            }
+
+            Log::channel('orders')->info(json_encode(["request" => $request->all(), "response" => $order], JSON_PRETTY_PRINT));
+
+            return $responses;
+
+        } catch (\Exception $e) {
+            Log::channel('orders')->info(json_encode(["request" => $request->all(), "response" => $e->getMessage()], JSON_PRETTY_PRINT));
         }
-
-        if ($arr["email"]) {
-            $emailPayload = [
-                'recipient' => $customer->email,
-                'text'      => $arr["email"],
-                'subject'   => "Order Received",
-            ];
-
-            SendEmail::dispatch($emailPayload);
-
-            $responses[] = ["email" => $emailPayload];
-        }
-
-        Log::channel('orders')->info(json_encode(["request" => $request->all(), "response" => $order], JSON_PRETTY_PRINT));
-
-        return $responses;
     }
 
     public function update(ValidationRequest $request, Order $order)
