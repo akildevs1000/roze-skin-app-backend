@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
@@ -12,6 +11,10 @@ class Kernel extends ConsoleKernel
         // $schedule
         //     ->command('track:shipments-test')
         //     ->everyMinute();
+
+        $schedule
+            ->command('app:insert-order-items')
+            ->everyFiveMinutes();
 
         $schedule
             ->command('track:shipments')
