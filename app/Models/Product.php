@@ -11,11 +11,11 @@ class Product extends Model
 
     protected $guarded = [];
 
-    /**
-     * Get the product_category that owns the Product
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
+    public function mappings()
+    {
+        return $this->hasMany(ProductMapping::class);
+    }
+
     public function product_category()
     {
         return $this->belongsTo(ProductCategory::class);

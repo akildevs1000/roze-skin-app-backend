@@ -3,10 +3,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\ProductMapping;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
@@ -22,22 +22,25 @@ class ProductController extends Controller
      */
     public function index()
     {
-        return Product::with("product_category")->where("name", "LIKE", "%" . request("search", null) . "%")
+        return Product::with(["product_category", "mappings"])->where("name", "LIKE", "%" . request("search", null) . "%")
             ->orderByDesc("id")
             ->paginate(request("per_page"));
     }
 
     public function store(Request $request)
     {
+        $tracerId = 'Store TRC-' . bin2hex(random_bytes(8));
+
+        info("Process Start with $tracerId");
+
+        $ids = json_decode($request->inventory_item_ids ?? [], true);
+
         $validated = $request->validate([
             "name"                => "required|min:5|max:255",
             "description"         => "required|min:5|max:255",
             "price"               => "numeric|required",
             "product_category_id" => "required",
-            "item_number"         => "required|min:5|max:100",
-            "qty"                 => "required|numeric|min:1|max:1000",
             "image"               => "nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048",
-            "purchase_price"      => "required",
         ]);
 
         if ($request->hasFile('image')) {
@@ -50,26 +53,42 @@ class ProductController extends Controller
 
         $product = Product::create($validated);
 
+        $mappings = [];
+
+        foreach ($ids as $id) {
+
+            $mappings[] = [
+                "product_id"        => $product->id,
+                "inventory_item_id" => $id,
+            ];
+        }
+
+        info(json_encode($mappings, JSON_PRETTY_PRINT));
+
+        ProductMapping::insert($mappings);
+
+        info("Mapping inserted for product {$product->id}");
+
+        info("Store Process End with $tracerId");
+
         return $product;
     }
 
     public function updateProduct(Request $request)
     {
+        $tracerId = 'Update TRC-' . bin2hex(random_bytes(8));
+
+        info("Process Start with $tracerId");
+
+        $ids = json_decode($request->inventory_item_ids ?? [], true);
+
         $validated = $request->validate([
             "id"                  => "required|exists:products,id",
             "name"                => "required|min:5|max:255",
             "description"         => "required|min:5|max:255",
             "price"               => "numeric|required",
             "product_category_id" => "required",
-            "item_number"         => [
-                "required",
-                "min:5",
-                "max:100",
-                Rule::unique('products', 'item_number')->ignore($request->id),
-            ],
-            "qty"                 => "required|numeric|min:1|max:1000",
             "image"               => "nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048",
-            "purchase_price"      => "required",
         ]);
 
         $product = Product::findOrFail($request->id);
@@ -88,6 +107,33 @@ class ProductController extends Controller
         }
 
         $product->update($validated);
+
+        $mappings = [];
+
+        foreach ($ids as $id) {
+
+            $mappings[] = [
+                "product_id"        => $product->id,
+                "inventory_item_id" => $id,
+            ];
+        }
+
+        info(json_encode($mappings, JSON_PRETTY_PRINT));
+
+        $mappingFound = ProductMapping::where("product_id", $request->id)->first();
+
+        if ($mappingFound) {
+
+            info("Delete existing mapping for product {$product->id}");
+
+            $mappingFound->delete();
+        }
+
+        info("New mapping inserted for product {$product->id}");
+
+        ProductMapping::insert($mappings);
+
+        info("Update Process End with $tracerId");
 
         return $product->fresh();
     }
