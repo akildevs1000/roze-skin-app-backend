@@ -41,6 +41,7 @@ class ProductController extends Controller
             "price"               => "numeric|required",
             "product_category_id" => "required",
             "image"               => "nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048",
+            'qty'         => 'required|integer|min:0',
         ]);
 
         if ($request->hasFile('image')) {
@@ -89,6 +90,7 @@ class ProductController extends Controller
             "price"               => "numeric|required",
             "product_category_id" => "required",
             "image"               => "nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048",
+            'qty'         => 'required|integer|min:0',
         ]);
 
         $product = Product::findOrFail($request->id);
