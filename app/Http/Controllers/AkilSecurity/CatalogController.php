@@ -26,6 +26,7 @@ class CatalogController extends Controller
             "title"   => "required|min:5|max:255",
             "image"   => "nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048",
             "content" => "nullable",
+            "description" => "nullable",
         ]);
 
         if ($request->hasFile('image')) {
@@ -53,6 +54,7 @@ class CatalogController extends Controller
             "title"   => "required|min:5|max:255",
             "image"   => "nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048",
             "content" => "nullable",
+            "description" => "nullable",
         ]);
 
         $Catalog = Catalog::findOrFail($request->id);
