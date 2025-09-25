@@ -11,7 +11,14 @@ class CatalogController extends Controller
 {
     public function index()
     {
-        return Catalog::where("title", "LIKE", "%" . request("search", null) . "%")
+        $catalog_category_id = request('catalog_category_id');
+        
+        $search = request('search');
+
+        return Catalog::query()
+            ->when($catalog_category_id, fn ($q) => $q->where('catalog_category_id', $catalog_category_id))
+            ->when($search, fn ($q) => $q->where("model_number", "LIKE", "%" . request("search", null) . "%"))
+            ->with("catalog_category")
             ->orderByDesc("id")
             ->paginate(request("per_page"));
     }
@@ -23,10 +30,17 @@ class CatalogController extends Controller
         info("Process Start with $tracerId");
 
         $validated = $request->validate([
-            "title"   => "required|min:5|max:255",
-            "image"   => "nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048",
-            "content" => "nullable",
-            "description" => "nullable",
+            "title"                => "required|min:4|max:255",
+            "image"                => "nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048",
+            "content"              => "nullable",
+            "description"          => "nullable",
+
+            "model_number"         => "required",
+            "video_link"           => "nullable",
+            "data_sheet_link"      => "nullable",
+            "product_gallery_link" => "nullable",
+            "website_link"         => "nullable",
+            "catalog_category_id"  => "required",
         ]);
 
         if ($request->hasFile('image')) {
@@ -51,10 +65,17 @@ class CatalogController extends Controller
         info("Process Start with $tracerId");
 
         $validated = $request->validate([
-            "title"   => "required|min:5|max:255",
-            "image"   => "nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048",
-            "content" => "nullable",
-            "description" => "nullable",
+            "title"                => "required|min:4|max:255",
+            "image"                => "nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048",
+            "content"              => "nullable",
+            "description"          => "nullable",
+
+            "model_number"         => "required",
+            "video_link"           => "nullable",
+            "data_sheet_link"      => "nullable",
+            "product_gallery_link" => "nullable",
+            "website_link"         => "nullable",
+            "catalog_category_id"  => "required",
         ]);
 
         $Catalog = Catalog::findOrFail($request->id);

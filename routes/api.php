@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AkilSecurity\CatalogCategoryController;
 use App\Http\Controllers\AkilSecurity\CatalogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BusinessSourceController;
@@ -110,3 +111,6 @@ Route::get('repeated-customer-report', [CustomerController::class, "repeatedCust
 Route::apiResource('akil-security-catalog', CatalogController::class);
 Route::get('akil-security-catalog-list', [CatalogController::class, "dropDown"]);
 Route::post('akil-security-catalog-update', [CatalogController::class, "updateProduct"]);
+
+Route::apiResource('catalog-categories', CatalogCategoryController::class);
+Route::get('catalog-category-list', [CatalogCategoryController::class, "dropDown"]);

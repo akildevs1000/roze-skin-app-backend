@@ -28,4 +28,15 @@ class Catalog extends Model
     {
         return date("d-M-y h:i:sa", strtotime($this->created_at));
     }
+
+    /**
+     * Get the user that owns the Catalog
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function catalog_category()
+    {
+        return $this->belongsTo(CatalogCategory::class);
+    }
+
 }
