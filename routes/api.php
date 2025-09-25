@@ -1,11 +1,11 @@
 <?php
 
+use App\Http\Controllers\AkilSecurity\CatalogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BusinessSourceController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DeliveryServiceController;
-use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InventoryItemController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MenuController;
@@ -106,3 +106,7 @@ Route::get('payment-mode-report', [PaymentModeController::class, "report"]);
 Route::get('city-report', [CityController::class, "report"]);
 Route::get('customer-report', [CustomerController::class, "report"]);
 Route::get('repeated-customer-report', [CustomerController::class, "repeatedCustomerReport"]);
+
+Route::apiResource('akil-security-catalog', CatalogController::class);
+Route::get('akil-security-catalog-list', [CatalogController::class, "dropDown"]);
+Route::post('akil-security-catalog-update', [CatalogController::class, "updateProduct"]);
