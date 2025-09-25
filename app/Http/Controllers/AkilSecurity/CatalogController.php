@@ -43,7 +43,7 @@ class CatalogController extends Controller
         return $Catalog;
     }
 
-    public function updateCatalog(Request $request)
+    public function updateProduct(Request $request)
     {
         $tracerId = 'Update TRC-' . bin2hex(random_bytes(8));
 
