@@ -12,12 +12,17 @@ class CatalogController extends Controller
     public function index()
     {
         $catalog_category_id = request('catalog_category_id');
-        
+
         $search = request('search');
 
         return Catalog::query()
-            ->when($catalog_category_id, fn ($q) => $q->where('catalog_category_id', $catalog_category_id))
-            ->when($search, fn ($q) => $q->where("model_number", "LIKE", "%" . request("search", null) . "%"))
+            ->when($catalog_category_id, fn($q) => $q->where('catalog_category_id', $catalog_category_id))
+            ->when($search, function ($q) use ($search) {
+                $q->where(function ($q2) use ($search) {
+                    $q2->where("model_number", "LIKE", "%{$search}%")
+                        ->orWhere("title", "LIKE", "%{$search}%");
+                });
+            })
             ->with("catalog_category")
             ->orderByDesc("id")
             ->paginate(request("per_page"));
