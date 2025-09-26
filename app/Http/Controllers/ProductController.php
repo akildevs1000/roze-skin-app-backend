@@ -41,7 +41,7 @@ class ProductController extends Controller
             "price"               => "numeric|required",
             "product_category_id" => "required",
             "image"               => "nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048",
-            'qty'         => 'required|integer|min:0',
+            'qty'                 => 'required|integer|min:0',
         ]);
 
         if ($request->hasFile('image')) {
@@ -90,7 +90,7 @@ class ProductController extends Controller
             "price"               => "numeric|required",
             "product_category_id" => "required",
             "image"               => "nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048",
-            'qty'         => 'required|integer|min:0',
+            'qty'                 => 'required|integer|min:0',
         ]);
 
         $product = Product::findOrFail($request->id);
@@ -120,20 +120,15 @@ class ProductController extends Controller
             ];
         }
 
-        info(json_encode($mappings, JSON_PRETTY_PRINT));
-
-        $mappingFound = ProductMapping::where("product_id", $request->id)->first();
-
-        if ($mappingFound) {
-
-            info("Delete existing mapping for product {$product->id}");
-
-            $mappingFound->delete();
-        }
+        ProductMapping::where("product_id", $request->id)->delete();
+        info("Delete existing mapping for product {$product->id}");
+        info("Request id: " . $request->id);
 
         info("New mapping inserted for product {$product->id}");
 
         ProductMapping::insert($mappings);
+
+        info(json_encode($mappings, JSON_PRETTY_PRINT));
 
         info("Update Process End with $tracerId");
 
