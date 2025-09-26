@@ -19,8 +19,8 @@ class CatalogController extends Controller
             ->when($catalog_category_id, fn($q) => $q->where('catalog_category_id', $catalog_category_id))
             ->when($search, function ($q) use ($search) {
                 $q->where(function ($q2) use ($search) {
-                    $q2->where("model_number", "LIKE", "%{$search}%")
-                        ->orWhere("title", "LIKE", "%{$search}%");
+                    $q2->where("model_number", "ILIKE", "%{$search}%")
+                        ->orWhere("title", "ILIKE", "%{$search}%");
                 });
             })
             ->with("catalog_category")
