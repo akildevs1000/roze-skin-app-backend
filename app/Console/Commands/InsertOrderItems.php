@@ -3,7 +3,6 @@ namespace App\Console\Commands;
 
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\Product;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -82,47 +81,17 @@ class InsertOrderItems extends Command
             return collect();
         }
 
-// Get all unique, normalized item descriptions
-        $itemNames = $orders->flatMap(fn($order) =>
-            collect($order->items)->pluck('item')
-        )->map(function ($item) {
-            // Normalize spaces
-            $item = preg_replace('/\s+/', ' ', $item);
-
-            // Normalize dash variations to "-"
-            $item = str_replace(['–', '—'], '-', $item);
-
-            // Clean spacing around "-" and "|"
-            $item = preg_replace('/\s*-\s*/', ' - ', $item);
-            $item = preg_replace('/\s*\|\s*/', ' | ', $item);
-
-            return trim($item);
-        })->unique();
-
-        // Fetch existing product IDs mapped by description
-        $products = Product::whereIn('description', $itemNames)
-            ->pluck('id', 'description')
-            ->toArray();
-
-        $items = $orders->flatMap(function ($order) use (&$products) {
-            return collect($order->items)->map(function ($item) use ($order, &$products) {
-                $description = $item['item'];
-                
-                if (! isset($products[$description])) {
-                    // info(json_encode([$order->order_id => $description], JSON_PRETTY_PRINT));
-                }
+        $items = $orders->flatMap(function ($order) {
+            return collect($order->items)->map(function ($item) use ($order) {
                 return [
                     'quantity'   => $item['quantity'] ?? 0,
                     'rate'       => $item['rate'] ?? 0,
                     'order_id'   => $order->order_id,
                     'order_date' => date("Y-m-d H:i:s", strtotime($order->order_date)) ?? now(),
-                    'product_id' => $products[$description] ?? 0,
+                    'product_id' => $item['product_id'] ?? 0,
                 ];
             });
         });
-
-        // $this->info(json_encode($items, JSON_PRETTY_PRINT));
-        // die;
 
         return $items;
     }
