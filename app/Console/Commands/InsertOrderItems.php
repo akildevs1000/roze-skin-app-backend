@@ -107,17 +107,6 @@ class InsertOrderItems extends Command
         $items = $orders->flatMap(function ($order) use (&$products) {
             return collect($order->items)->map(function ($item) use ($order, &$products) {
                 $description = $item['item'];
-
-                // // If product doesn't exist, create it
-                // if (! isset($products[$description])) {
-                //     $product = Product::create([
-                //         'name'        => $description,
-                //         'description' => $description,
-                //         // add other default fields if required
-                //     ]);
-                //     $products[$description] = $product->id;
-                // }
-
                 return [
                     'quantity'   => $item['quantity'] ?? 0,
                     'rate'       => $item['rate'] ?? 0,
