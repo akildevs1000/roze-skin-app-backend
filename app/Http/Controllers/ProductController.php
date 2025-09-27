@@ -187,8 +187,8 @@ class ProductController extends Controller
                             $inventoryData[$inventoryId] = [
                                 'qty'           => 0,
                                 'item_number'   => $map->inventory_item->item_number,
-                                'item_name'          => $map->inventory_item->name,
-                                'product' => $orderItem->product->only(['display_image', 'name', 'description']) // how to remove mappings from here
+                                'item_name'     => $map->inventory_item->name,
+                                'display_image' => $map->inventory_item->display_image,
                             ];
                         }
 
