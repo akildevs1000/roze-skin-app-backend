@@ -107,6 +107,10 @@ class InsertOrderItems extends Command
         $items = $orders->flatMap(function ($order) use (&$products) {
             return collect($order->items)->map(function ($item) use ($order, &$products) {
                 $description = $item['item'];
+                
+                if (! isset($products[$description])) {
+                    info(json_encode([$order->order_id => $description], JSON_PRETTY_PRINT));
+                }
                 return [
                     'quantity'   => $item['quantity'] ?? 0,
                     'rate'       => $item['rate'] ?? 0,
