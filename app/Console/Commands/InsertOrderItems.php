@@ -111,14 +111,14 @@ class InsertOrderItems extends Command
                 $description = $item['item'];
 
                 // If product doesn't exist, create it
-                if (! isset($products[$description])) {
-                    $product = Product::create([
-                        'name'        => $description,
-                        'description' => $description,
-                        // add other default fields if required
-                    ]);
-                    $products[$description] = $product->id;
-                }
+                // if (! isset($products[$description])) {
+                //     $product = Product::create([
+                //         'name'        => $description,
+                //         'description' => $description,
+                //         // add other default fields if required
+                //     ]);
+                //     $products[$description] = $product->id;
+                // }
 
                 return [
                     'quantity'   => $item['quantity'] ?? 0,
