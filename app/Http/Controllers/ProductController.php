@@ -24,7 +24,7 @@ class ProductController extends Controller
     {
         return Product::with(["product_category", "mappings"])->where("name", "LIKE", "%" . request("search", null) . "%")
             ->orderByDesc("id")
-            ->paginate(request("per_page"));
+            ->paginate(1000);
     }
 
     public function store(Request $request)
