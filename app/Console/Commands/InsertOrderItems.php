@@ -108,22 +108,22 @@ class InsertOrderItems extends Command
             return collect($order->items)->map(function ($item) use ($order, &$products) {
                 $description = $item['item'];
 
-                // If product doesn't exist, create it
-                if (! isset($products[$description])) {
-                    $product = Product::create([
-                        'name'        => $description,
-                        'description' => $description,
-                        // add other default fields if required
-                    ]);
-                    $products[$description] = $product->id;
-                }
+                // // If product doesn't exist, create it
+                // if (! isset($products[$description])) {
+                //     $product = Product::create([
+                //         'name'        => $description,
+                //         'description' => $description,
+                //         // add other default fields if required
+                //     ]);
+                //     $products[$description] = $product->id;
+                // }
 
                 return [
                     'quantity'   => $item['quantity'] ?? 0,
                     'rate'       => $item['rate'] ?? 0,
                     'order_id'   => $order->order_id,
                     'order_date' => date("Y-m-d H:i:s", strtotime($order->order_date)) ?? now(),
-                    'product_id' => $products[$description],
+                    'product_id' => $products[$description] ?? 0,
                 ];
             });
         });
