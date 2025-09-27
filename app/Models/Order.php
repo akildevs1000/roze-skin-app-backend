@@ -140,4 +140,9 @@ class Order extends Model
     {
         return $this->payments->sum('paid_amount');
     }
+
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
 }

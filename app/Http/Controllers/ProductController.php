@@ -1,7 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductMapping;
 use Illuminate\Http\Request;
@@ -149,37 +149,54 @@ class ProductController extends Controller
 
     public function report()
     {
+
         $product_id = request('product_id');
         $from       = request('from') ? request('from') . " 00:00:00" : date("Y-m-d 00:00:00");
         $to         = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
         $dates      = [$from, $to];
 
-        $orderIds = Order::whereBetween("order_date", $dates)->whereNotIn("order_status", ["cancelled"])->pluck("order_id");
+        $inventoryData = [];
 
-        return Product::query()
-            ->when($product_id, function ($query, $id) {
-                $query->whereHas("order_items", fn($q) => $q->where('product_id', $id));
+        // return OrderItem::count();
+
+        OrderItem::with('product.mappings.inventory_item') // load mappings only
+            ->when(request()->filled("product_id"), function ($q) use ($product_id) {
+                $q->where('product_id', $product_id);
             })
-            ->whereHas("order_items", function ($q) use ($orderIds) {
-                $q->whereIn('order_id', $orderIds);
+
+            ->whereHas('order.invoice', function ($q) use ($dates) {
+                $q->whereBetween('created_at', $dates);
             })
-            ->withCount([
-                'order_items as orders_count' => function ($q) use ($product_id, $dates) {
-                    $q->whereBetween('order_date', $dates);
-                    if ($product_id) {
-                        $q->where('product_id', $product_id);
+
+            ->whereHas('order', function ($q) {
+                $q->where('order_status', 'completed');
+            })
+
+            ->chunk(500, function ($orderItems) use (&$inventoryData) {
+
+                foreach ($orderItems as $orderItem) {
+
+                    $mappings = $orderItem->product->mappings ?? [];
+
+                    foreach ($mappings as $map) {
+
+                        $inventoryId = $map->inventory_item_id; // get directly from mapping
+                        $quantity    = $orderItem->quantity * ($map->quantity ?? 1);
+
+                        if (! isset($inventoryData[$inventoryId])) {
+                            $inventoryData[$inventoryId] = [
+                                'qty'           => 0,
+                                'item_number'   => $map->inventory_item->item_number,
+                                'item_name'          => $map->inventory_item->name,
+                                'product' => $orderItem->product->only(['display_image', 'name', 'description']) // how to remove mappings from here
+                            ];
+                        }
+
+                        $inventoryData[$inventoryId]['qty'] += $quantity;
                     }
-                },
-            ])
-            ->withSum([
-                'order_items as orders_sum_total' => function ($q) use ($product_id, $dates) {
-                    $q->whereBetween('order_date', $dates);
-                    if ($product_id) {
-                        $q->where('product_id', $product_id);
-                    }
-                },
-            ], 'rate')
-            ->with("product_category")
-            ->get();
+                }
+            });
+
+        return response()->json(array_values($inventoryData));
     }
 }
