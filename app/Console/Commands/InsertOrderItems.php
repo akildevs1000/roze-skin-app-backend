@@ -87,6 +87,8 @@ class InsertOrderItems extends Command
             collect($order->items)->pluck('item')
         )->unique();
 
+        info($itemNames);
+
         // Fetch existing product IDs mapped by description
         $products = Product::whereIn('description', $itemNames)
             ->pluck('id', 'description')
