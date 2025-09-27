@@ -82,10 +82,22 @@ class InsertOrderItems extends Command
             return collect();
         }
 
-        // Get all unique item descriptions
+// Get all unique, normalized item descriptions
         $itemNames = $orders->flatMap(fn($order) =>
             collect($order->items)->pluck('item')
-        )->unique();
+        )->map(function ($item) {
+            // Normalize spaces
+            $item = preg_replace('/\s+/', ' ', $item);
+
+            // Normalize dash variations to "-"
+            $item = str_replace(['–', '—'], '-', $item);
+
+            // Clean spacing around "-" and "|"
+            $item = preg_replace('/\s*-\s*/', ' - ', $item);
+            $item = preg_replace('/\s*\|\s*/', ' | ', $item);
+
+            return trim($item);
+        })->unique();
 
         info($itemNames);
 
