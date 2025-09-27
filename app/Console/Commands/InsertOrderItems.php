@@ -109,7 +109,7 @@ class InsertOrderItems extends Command
                 $description = $item['item'];
                 
                 if (! isset($products[$description])) {
-                    info(json_encode([$order->order_id => $description], JSON_PRETTY_PRINT));
+                    // info(json_encode([$order->order_id => $description], JSON_PRETTY_PRINT));
                 }
                 return [
                     'quantity'   => $item['quantity'] ?? 0,
