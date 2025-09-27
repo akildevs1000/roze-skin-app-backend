@@ -99,8 +99,6 @@ class InsertOrderItems extends Command
             return trim($item);
         })->unique();
 
-        info($itemNames);
-
         // Fetch existing product IDs mapped by description
         $products = Product::whereIn('description', $itemNames)
             ->pluck('id', 'description')
@@ -112,12 +110,12 @@ class InsertOrderItems extends Command
 
                 // If product doesn't exist, create it
                 if (! isset($products[$description])) {
-                    // $product = Product::create([
-                    //     'name'        => $description,
-                    //     'description' => $description,
-                    //     // add other default fields if required
-                    // ]);
-                    // $products[$description] = $product->id;
+                    $product = Product::create([
+                        'name'        => $description,
+                        'description' => $description,
+                        // add other default fields if required
+                    ]);
+                    $products[$description] = $product->id;
                 }
 
                 return [
