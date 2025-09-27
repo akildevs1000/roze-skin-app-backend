@@ -120,13 +120,16 @@ class InsertOrderItems extends Command
                 //     $products[$description] = $product->id;
                 // }
 
-                return [
-                    'quantity'   => $item['quantity'] ?? 0,
-                    'rate'       => $item['rate'] ?? 0,
-                    'order_id'   => $order->order_id,
-                    'order_date' => date("Y-m-d H:i:s", strtotime($order->order_date)) ?? now(),
-                    'product_id' => $products[$description],
-                ];
+                if (isset($products[$description])) {
+                    return [
+                        'quantity'   => $item['quantity'] ?? 0,
+                        'rate'       => $item['rate'] ?? 0,
+                        'order_id'   => $order->order_id,
+                        'order_date' => date("Y-m-d H:i:s", strtotime($order->order_date)) ?? now(),
+                        'product_id' => $products[$description],
+                    ];
+                }
+
             });
         });
 
