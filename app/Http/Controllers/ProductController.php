@@ -53,6 +53,8 @@ class ProductController extends Controller
             $validated['image'] = 'products/' . $filename;
         }
 
+        $validated['purchase_price'] = $validated['price'];
+
         $product = Product::create($validated);
 
         $mappings = [];
@@ -109,6 +111,8 @@ class ProductController extends Controller
             $image->move(public_path('products'), $filename);
             $validated['image'] = 'products/' . $filename;
         }
+
+        $validated['purchase_price'] = $validated['price'];
 
         $product->update($validated);
 
