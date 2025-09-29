@@ -3,6 +3,7 @@ namespace App\Console\Commands;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -81,17 +82,39 @@ class InsertOrderItems extends Command
             return collect();
         }
 
-        $items = $orders->flatMap(function ($order) {
-            return collect($order->items)->map(function ($item) use ($order) {
-                return [
-                    'quantity'   => $item['quantity'] ?? 0,
-                    'rate'       => $item['rate'] ?? 0,
-                    'order_id'   => $order->order_id,
-                    'order_date' => date("Y-m-d H:i:s", strtotime($order->order_date)) ?? now(),
-                    'product_id' => $item['product_id'] ?? 0,
-                ];
-            });
+        // Get all unique item descriptions
+        $itemIds = $orders->flatMap(fn($order) =>
+            collect($order->items)->pluck('product_id')
+        )->unique();
+
+        // Fetch existing product IDs mapped by description
+        $products = Product::whereIn('item_number', $itemIds)
+            ->pluck('id', 'item_number')
+            ->toArray();
+
+        $items = $orders->flatMap(function ($order) use (&$products) {
+            return collect($order->items)
+                ->map(function ($item) use ($order, &$products) {
+
+                    $item_number = $item['item_number'] ?? 0;
+
+                    if (! isset($products[$item_number]) && $item_number > 0) {
+                        return [
+                            'quantity'   => $item['quantity'] ?? 0,
+                            'rate'       => $item['rate'] ?? 0,
+                            'order_id'   => $order->order_id,
+                            'order_date' => date("Y-m-d H:i:s", strtotime($order->order_date)) ?? now(),
+                            'product_id' => $products[$item_number] ?? 0,
+                        ];
+                    }
+
+                    return null; // not needed, but makes it explicit
+                })
+                ->filter(); // removes nulls
         });
+
+        // $this->info(json_encode($items, JSON_PRETTY_PRINT));
+        // die;
 
         return $items;
     }
