@@ -58,6 +58,7 @@ class ValidationRequest extends FormRequest
             'shipping_method' => 'nullable|string',
             'items' => 'required|array|min:1',
             'items.*.item' => 'required',
+            'items.*.product_id' => 'required',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.rate' => 'required|numeric|min:0',
             'items.*.tax' => 'required|numeric|min:0',

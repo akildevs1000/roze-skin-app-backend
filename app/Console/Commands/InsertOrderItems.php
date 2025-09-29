@@ -73,6 +73,7 @@ class InsertOrderItems extends Command
     public function getItemsWithOrderId()
     {
         $orders = Order::query()
+            ->whereDate("order_date", ">=", date("2025-09-29"))
             ->whereNotIn("order_status", ["cancelled"])
             ->without('customer')
             ->latest('id')
@@ -85,7 +86,7 @@ class InsertOrderItems extends Command
         // Get all unique item descriptions
         $itemIds = $orders->flatMap(fn($order) =>
             collect($order->items)->pluck('product_id')
-        )->unique();
+        )->unique()->filter();
 
         // Fetch existing product IDs mapped by description
         $products = Product::whereIn('item_number', $itemIds)
@@ -96,19 +97,15 @@ class InsertOrderItems extends Command
             return collect($order->items)
                 ->map(function ($item) use ($order, &$products) {
 
-                    $item_number = $item['item_number'] ?? 0;
+                    $product_id = $item['product_id'] ?? 0;
 
-                    if (! isset($products[$item_number]) && $item_number > 0) {
-                        return [
-                            'quantity'   => $item['quantity'] ?? 0,
-                            'rate'       => $item['rate'] ?? 0,
-                            'order_id'   => $order->order_id,
-                            'order_date' => date("Y-m-d H:i:s", strtotime($order->order_date)) ?? now(),
-                            'product_id' => $products[$item_number] ?? 0,
-                        ];
-                    }
-
-                    return null; // not needed, but makes it explicit
+                    return [
+                        'quantity'   => $item['quantity'] ?? 0,
+                        'rate'       => $item['rate'] ?? 0,
+                        'order_id'   => $order->order_id,
+                        'order_date' => date("Y-m-d H:i:s", strtotime($order->order_date)) ?? now(),
+                        'product_id' => $products[$product_id] ?? 0,
+                    ];
                 })
                 ->filter(); // removes nulls
         });
