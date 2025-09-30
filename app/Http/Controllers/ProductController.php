@@ -33,7 +33,7 @@ class ProductController extends Controller
 
         info("Process Start with $tracerId");
 
-        $ids = json_decode($request->inventory_item_ids ?? [], true);
+        $ids = json_decode($request->inventory_item_ids ?? json_encode([]), true);
 
         $validated = $request->validate([
             "name"                => "required|min:5|max:255",
@@ -67,13 +67,15 @@ class ProductController extends Controller
             ];
         }
 
-        info(json_encode($mappings, JSON_PRETTY_PRINT));
+        if (count($ids)) {
+            info(json_encode($mappings, JSON_PRETTY_PRINT));
 
-        ProductMapping::insert($mappings);
+            ProductMapping::insert($mappings);
 
-        info("Mapping inserted for product {$product->id}");
+            info("Mapping inserted for product {$product->id}");
 
-        info("Store Process End with $tracerId");
+            info("Store Process End with $tracerId");
+        }
 
         return $product;
     }
