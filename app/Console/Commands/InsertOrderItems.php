@@ -73,7 +73,7 @@ class InsertOrderItems extends Command
     public function getItemsWithOrderId()
     {
         $orders = Order::query()
-            ->whereDate("order_date", ">=", date("2025-09-29"))
+            ->whereDate("order_date", ">=", date("2025-09-30"))
             ->whereNotIn("order_status", ["cancelled"])
             ->without('customer')
             ->latest('id')
@@ -109,6 +109,8 @@ class InsertOrderItems extends Command
                 })
                 ->filter(); // removes nulls
         });
+
+        info($items);
 
         // $this->info(json_encode($items, JSON_PRETTY_PRINT));
         // die;

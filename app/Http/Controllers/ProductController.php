@@ -191,7 +191,7 @@ class ProductController extends Controller
                     foreach ($mappings as $map) {
 
                         $inventoryId = $map->inventory_item_id; // get directly from mapping
-                        $quantity    = $orderItem->quantity * ($map->quantity ?? 1);
+                        $quantity    = $orderItem->product->qty * $orderItem->quantity;
 
                         if (! isset($inventoryData[$inventoryId])) {
                             $inventoryData[$inventoryId] = [
