@@ -86,7 +86,7 @@ class ProductController extends Controller
 
         info("Process Start with $tracerId");
 
-        $ids = json_decode($request->inventory_item_ids ?? [], true);
+        $ids = json_decode($request->inventory_item_ids ?? json_encode([]), true);
 
         $validated = $request->validate([
             "id"                  => "required|exists:products,id",
@@ -128,17 +128,19 @@ class ProductController extends Controller
             ];
         }
 
-        ProductMapping::where("product_id", $request->id)->delete();
-        info("Delete existing mapping for product {$product->id}");
-        info("Request id: " . $request->id);
+        if (count($ids)) {
+            ProductMapping::where("product_id", $request->id)->delete();
+            info("Delete existing mapping for product {$product->id}");
+            info("Request id: " . $request->id);
 
-        info("New mapping inserted for product {$product->id}");
+            info("New mapping inserted for product {$product->id}");
 
-        ProductMapping::insert($mappings);
+            ProductMapping::insert($mappings);
 
-        info(json_encode($mappings, JSON_PRETTY_PRINT));
+            info(json_encode($mappings, JSON_PRETTY_PRINT));
 
-        info("Update Process End with $tracerId");
+            info("Update Process End with $tracerId");
+        }
 
         return $product->fresh();
     }
