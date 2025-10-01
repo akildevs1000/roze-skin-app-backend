@@ -42,7 +42,7 @@ class ProductController extends Controller
             "product_category_id" => "required",
             "image"               => "nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048",
             'qty'                 => 'required|integer|min:0',
-            'item_number'         => "required",
+            "item_number"         => "required|unique:products,item_number",
         ]);
 
         if ($request->hasFile('image')) {
