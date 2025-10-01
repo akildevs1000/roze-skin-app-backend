@@ -89,7 +89,6 @@ class ProductController extends Controller
         $ids = json_decode($request->inventory_item_ids ?? json_encode([]), true);
 
         $validated = $request->validate([
-            "id"                  => "required|exists:products,id",
             "name"                => "required|min:5|max:255",
             "description"         => "required|min:5|max:255",
             "price"               => "numeric|required",
@@ -99,7 +98,7 @@ class ProductController extends Controller
             'item_number'         => 'required',
         ]);
 
-        $product = Product::findOrFail($request->id);
+        $product = Product::findOrFail($request->item_number);
 
         if ($request->hasFile('image')) {
             // Delete old image if it exists
@@ -129,9 +128,9 @@ class ProductController extends Controller
         }
 
         if (count($ids)) {
-            ProductMapping::where("product_id", $request->id)->delete();
+            ProductMapping::where("product_id", $product->id)->delete();
             info("Delete existing mapping for product {$product->id}");
-            info("Request id: " . $request->id);
+            info("Request id: " . $request->item_number);
 
             info("New mapping inserted for product {$product->id}");
 
