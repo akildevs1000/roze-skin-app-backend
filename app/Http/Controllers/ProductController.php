@@ -41,7 +41,7 @@ class ProductController extends Controller
             "price"               => "numeric|required",
             "product_category_id" => "required",
             "image"               => "nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048",
-            'qty'                 => 'required|integer|min:0'
+            'qty'                 => 'required|integer|min:0',
         ]);
 
         if ($request->hasFile('image')) {
@@ -96,7 +96,7 @@ class ProductController extends Controller
             'qty'                 => 'required|integer|min:0',
         ]);
 
-        $product = Product::findOrFail($request->item_number);
+        $product = Product::where("item_number", $request->item_number)->first();
 
         if ($request->hasFile('image')) {
             // Delete old image if it exists
