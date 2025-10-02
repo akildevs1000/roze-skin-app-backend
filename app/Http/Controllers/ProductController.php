@@ -176,9 +176,9 @@ class ProductController extends Controller
                 $q->whereBetween('created_at', $dates);
             })
 
-            ->whereHas('order', function ($q) {
-                $q->where('order_status', 'completed');
-            })
+            // ->whereHas('order', function ($q) {
+            //     $q->where('order_status', 'completed');
+            // })
 
             ->chunk(500, function ($orderItems) use (&$inventoryData) {
 
