@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\Template;
 use App\Models\WhatsappClient;
 use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -472,18 +473,35 @@ class OrderController extends Controller
 
     public function orderSumByDate(Request $request)
     {
-        $from = $request->query('from_date');
-        $to   = $request->query('to_date');
 
-        $query = Order::selectRaw('DATE(created_at) as date, SUM(total) as total')
-            ->groupBy('date')
-            ->orderBy('date');
+        $from = request('from_date') ?? date('Y-m-d');
+        $to   = request('to_date') ?? date('Y-m-d');
 
-        // Default to first and last day of current month if not provided
-        $query->whereDate('created_at', '>=', $from ?? date("Y-m-01"));
-        $query->whereDate('created_at', '<=', $to ?? date("Y-m-t"));
+        $orders = Order::with('invoice')
+            ->whereHas('invoice', fn($q) => $q->whereDate('created_at', '>=', $from)
+                    ->whereDate('created_at', '<=', $to))
+            ->get()
+            ->groupBy(fn($order) => $order->invoice->created_at->format('Y-m-d'))
+            ->map(fn($orders, $date) => [
+                'date'  => $date,
+                'total' => $orders->sum(fn($o) => $o->total ?? 0),
+            ])
+            ->toArray();
 
-        return $query->get()->toArray();
+// Generate all dates in the range
+        $period = CarbonPeriod::create($from, $to);
+
+        $result = [];
+        foreach ($period as $date) {
+            $day      = $date->format('Y-m-d');
+            $result[] = [
+                'date'  => $day,
+                'total' => $orders[$day]['total'] ?? 0, // 0 if no orders on that date
+            ];
+        }
+
+        return $result;
+
     }
 
     public function statsByDate(Request $request)
