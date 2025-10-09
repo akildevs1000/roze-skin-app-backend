@@ -81,7 +81,7 @@ class InsertOrderItems extends Command
             ->without('customer')
             ->latest('id')
             ->whereHas('invoice', function ($q) {
-                $q->whereBetween('created_at', [date("Y-10-01 00:00:00"), date("Y-m-d 23:59:59")]);
+                $q->whereBetween('created_at', [date("Y-m-d 00:00:00"), date("Y-m-d 23:59:59")]);
             })
             ->get(['order_id', 'order_date', 'items']);
 
