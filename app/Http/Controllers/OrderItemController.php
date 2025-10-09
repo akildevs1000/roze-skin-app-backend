@@ -13,6 +13,7 @@ class OrderItemController extends Controller
     public function index()
     {
         $search = trim(request('search'));
+        $status = trim(request('status'));
 
         if (request('search') && ! is_numeric($search)) {
             return;
@@ -29,6 +30,12 @@ class OrderItemController extends Controller
             ->when($search, function ($q) use ($search) {
                 $q->where('order_id', $search);
             })
+
+            ->when($status, function ($q){
+                $q->whereDoesntHave("product");
+            })
+
+           
       
             ->whereBetween('order_date', $dates)
 
