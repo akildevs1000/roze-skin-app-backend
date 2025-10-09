@@ -54,10 +54,18 @@ class MenuController extends Controller
             ],
             [
                 'topMenu' => 'orders',
-                'icon'    => 'mdi-ticket-account',
+                'icon'    => 'mdi-package',
                 'module'  => 'orders',
                 'title'   => 'Orders',
                 'to'      => '/order',
+                'menu'    => 'source_access',
+            ],
+            [
+                'topMenu' => 'orders',
+                'icon'    => 'mdi-basket',
+                'module'  => 'orders',
+                'title'   => 'Orders Items',
+                'to'      => '/order_items',
                 'menu'    => 'source_access',
             ],
             [

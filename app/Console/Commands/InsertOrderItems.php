@@ -30,6 +30,8 @@ class InsertOrderItems extends Command
      */
     public function handle()
     {
+        // OrderItem::truncate();
+
         $orders = $this->getItemsWithOrderId();
 
         if (! count($orders)) {
@@ -53,6 +55,7 @@ class InsertOrderItems extends Command
         // Insert in chunks of 100
         $orders->chunk(100)->each(function ($chunk) {
             $insertData = $chunk->map(fn($item) => [
+                'name'   => $item['name'],
                 'order_id'   => $item['order_id'],
                 'product_id' => $item['product_id'] ?? 0, // default to 0 if null
                 'quantity'   => $item['quantity'],
@@ -73,49 +76,49 @@ class InsertOrderItems extends Command
     public function getItemsWithOrderId()
     {
         $orders = Order::query()
-            ->whereDate("order_date", ">=", date("2025-09-30"))
+        // ->whereDate("order_date", ">=", date("2025-10-01"))
             ->whereNotIn("order_status", ["cancelled"])
             ->without('customer')
             ->latest('id')
+            ->whereHas('invoice', function ($q) {
+                $q->whereBetween('created_at', [date("Y-10-01 00:00:00"), date("Y-m-d 23:59:59")]);
+            })
             ->get(['order_id', 'order_date', 'items']);
 
         if ($orders->isEmpty()) {
             return collect();
         }
 
-        // Get all unique item descriptions
-        $itemIds = $orders->flatMap(fn($order) =>
-            collect($order->items)->pluck('product_id')
-        )->unique()->filter();
+        $products = Product::pluck('id', 'item_number')->toArray();
 
-        // Fetch existing product IDs mapped by description
-        $products = Product::whereIn('item_number', $itemIds)
-            ->pluck('id', 'item_number')
-            ->toArray();
+        $arr = [];
 
-        $items = $orders->flatMap(function ($order) use (&$products) {
-            return collect($order->items)
-                ->map(function ($item) use ($order, &$products) {
+        $tempItems = [];
 
-                    $product_id = $item['product_id'] ?? 0;
+        foreach ($orders as $order) {
+            $items = $order->items;
+            foreach ($items as $key => $item) {
 
-                    return [
-                        'quantity'   => $item['quantity'] ?? 0,
-                        'rate'       => $item['rate'] ?? 0,
-                        'order_id'   => $order->order_id,
-                        'order_date' => date("Y-m-d H:i:s", strtotime($order->order_date)) ?? now(),
-                        'product_id' => $products[$product_id] ?? 0,
-                    ];
-                })
-                ->filter(); // removes nulls
-        });
+                $product_id = $item['product_id'] ?? 0;
 
-        info($items);
+                $arr[] = [
+                    'name'       => $product_id . " | " . $item['item'],
+                    'quantity'   => $item['quantity'] ?? 0,
+                    'rate'       => $item['rate'] ?? 0,
+                    'order_id'   => $order->order_id,
+                    'order_date' => date("Y-m-d H:i:s", strtotime($order->order_date)) ?? now(),
+                    'product_id' => $products[$product_id] ?? 0,
+                ];
 
-        // $this->info(json_encode($items, JSON_PRETTY_PRINT));
-        // die;
-
-        return $items;
+                // if (! isset($products[$product_id])) {
+                //     $tempItem                             = $item;
+                //     $tempItem["order_id"]                 = $order->order_id;
+                //     $tempItem["order_date"]               = date("Y-m-d H:i:s", strtotime($order->order_date)) ?? now();
+                //     $tempItems[$tempItem["order_date"]][] = $tempItem;
+                // }
+            }
+        }
+        return collect($arr);
     }
 
 }

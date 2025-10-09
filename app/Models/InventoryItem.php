@@ -32,8 +32,8 @@ class InventoryItem extends Model
         return $this->hasMany(StockEntry::class);
     }
 
-    // public function orderItems()
-    // {
-    //     return $this->hasMany(OrderItem::class);
-    // }
+    public function order_items()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
 }

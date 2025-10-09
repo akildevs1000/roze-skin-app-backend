@@ -11,6 +11,7 @@ use App\Http\Controllers\InventoryItemController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\OrderItemController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentModeController;
 use App\Http\Controllers\ProductCategoryController;
@@ -114,3 +115,9 @@ Route::post('akil-security-catalog-update', [CatalogController::class, "updatePr
 
 Route::apiResource('catalog-categories', CatalogCategoryController::class);
 Route::get('catalog-category-list', [CatalogCategoryController::class, "dropDown"]);
+
+
+Route::get('order-items-list', [OrderItemController::class, "dropDown"]);
+Route::get('order-items', [OrderItemController::class, "index"]);
+
+
