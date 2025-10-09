@@ -9,7 +9,7 @@ class OrderItemController extends Controller
     {
         return OrderItem::orderByDesc('id')->get();
     }
-    
+
     public function index()
     {
         $search = trim(request('search'));
@@ -31,12 +31,14 @@ class OrderItemController extends Controller
                 $q->where('order_id', $search);
             })
 
-            ->when($status, function ($q){
+            ->when($status && $status == "Mapped", function ($q) {
+                $q->whereHas("product");
+            })
+
+            ->when($status && $status == "Not Mapped", function ($q) {
                 $q->whereDoesntHave("product");
             })
 
-           
-      
             ->whereBetween('order_date', $dates)
 
             ->with(['product'])
