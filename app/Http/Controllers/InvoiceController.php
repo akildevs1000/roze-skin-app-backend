@@ -1,13 +1,16 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Invoice\ValidationRequest;
+use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Order;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class InvoiceController extends Controller
 {
@@ -155,6 +158,8 @@ class InvoiceController extends Controller
                 'order_status' => "completed",
             ]);
 
+            $this->handleEMXOrder($request->all());
+
             DB::commit();
 
             return response()->json([
@@ -208,5 +213,118 @@ class InvoiceController extends Controller
         $Invoice->delete();
 
         return response()->json();
+    }
+
+    public function handleEMXOrder($payload)
+    {
+        $order = Order::with("delivery_service")->find($payload["order_id"]);
+
+        if ($order?->delivery_service?->name !== "EMX") {
+            return;
+        }
+
+        $customer =  $order->customer;
+
+        $data = [
+            "weight" => [
+                "value" => 250,
+                "unit" => "Grams",
+            ],
+
+            "shipper" => [
+                "contact" => [
+                    "name" => "Roze Skincare",
+                    "mobileNumber" => "0529048025",
+                    "phoneNumber" => "0529048025",
+                    "emailAddress" => "rozeskincaredubai@gmail.com",
+                    "companyName" => "Roze Skincare",
+                ],
+                "address" => [
+                    "line1" => "DRS JAFFER'S BLDG - SHOP NO 4 - Al Nahdha street - 83481 - Al Souq Al Kabeer",
+                    "city" => "Dubai",
+                    "countryCode" => "AE",
+                    "zipCode" => "00000",
+                ],
+            ],
+
+            "consignee" => [
+                "contact" => [
+                    "name" => $customer->full_name,
+                    "mobileNumber" => $customer->whatsapp,
+                    "phoneNumber" => $customer->phone,
+                    "emailAddress" => $customer->email ?? "test@test.com",
+                    "companyName" => $customer->full_name,
+                ],
+                "address" => [
+                    "line1" => $customer?->shipping_address?->address_1 ?? "No Address given",
+                    "city" => $customer?->shipping_address?->city ?? "No City given",
+                    "countryCode" => "AE",
+                    "zipCode" => "00000",
+                ],
+            ],
+
+            "dimensions" => $this->getBoxDimension($payload["box_dimension"] ?? "Small"),
+
+            "account" => [
+                "number" => env("EMX_ACCOUNT_NO"),
+            ],
+
+            "productCode" => "Domestic",
+            "serviceType" => "None",
+            "printType" => "AWBOnly",
+            "numberOfPieces" => 1,
+            "referenceNumber1" => "any referece number",
+            "specialNotes" => $order->special_instructions ?? "Fragile handle with care",
+            "deliveryType" => "DoorToDoor",
+            "contentType" => "NonDocument",
+
+            "isCod" => $order->payment_method == 'COD',
+
+            "coDAmount" => [
+                "amount" => $order->total,
+                "currency" => $order->currency ?? "AED",
+            ],
+        ];
+
+        $headers = [
+            'Content-Type' => 'application/json',
+            'x-api-key'    => env('EMX_ORDER_CREATE_API_KEY'),
+        ];
+
+        $options = [
+            'max_body_length' => -1,      // unlimited
+            'max_content_length' => -1,   // unlimited
+        ];
+
+        Http::withOptions($options)
+            ->withHeaders($headers)
+            ->post(env('EMX_BASE_URL') . "/Shipments/create", $data);
+
+        return $data;
+    }
+
+    public function getBoxDimension($box = "Small")
+    {
+        $arr = [
+            "Small" => [
+                "length" => 23,
+                "width" => 14,
+                "height" => 4,
+                "unit" => "Centimetre",
+            ],
+            "Medium" => [
+                "length" => 35,
+                "width" => 20,
+                "height" => 15,
+                "unit" => "Centimetre",
+            ],
+            "Large" => [
+                "length" => 75,
+                "width" => 35,
+                "height" => 35,
+                "unit" => "Centimetre",
+            ]
+        ];
+        return $arr[$box];
     }
 }
