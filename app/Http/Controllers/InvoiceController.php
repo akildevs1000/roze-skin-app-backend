@@ -221,12 +221,12 @@ class InvoiceController extends Controller
         $order = Order::with("delivery_service")->find($order_id);
 
         if (!$order) {
-            Log::info("Order not found: $order_id");
+            Log::channel('order_emx')->info("Order not found: $order_id");
             return;
         }
 
         if ($order?->delivery_service?->name !== "EMX") {
-            Log::info("Order delivery server is not EMX: $order_id");
+            Log::channel('order_emx')->info("Order delivery server is not EMX: $order_id");
             return;
         }
 
@@ -303,7 +303,7 @@ class InvoiceController extends Controller
             'max_content_length' => -1,   // unlimited
         ];
 
-        Log::info('EMX Payload:', $data);
+        Log::channel('order_emx')->info('EMX Payload:', $data);
 
         try {
             $response = Http::withOptions($options)
@@ -311,20 +311,20 @@ class InvoiceController extends Controller
                 ->post(env('EMX_BASE_URL') . "/Shipments/create", $data);
 
             if (!$response->successful()) {
-                Log::error('EMX API returned an error', [
+                Log::channel('order_emx')->error('EMX API returned an error', [
                     'status' => $response->status(),
                     'body'   => $response->body(),
                 ]);
                 return false;
             }
 
-            Log::info('EMX API request successful', [
+            Log::channel('order_emx')->info('EMX API request successful', [
                 'response' => $response->json(),
             ]);
 
             return $response->json();
         } catch (\Exception $e) {
-            Log::error('EMX API request failed', [
+            Log::channel('order_emx')->error('EMX API request failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);

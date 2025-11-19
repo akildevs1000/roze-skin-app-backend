@@ -63,6 +63,12 @@ return [
             'level'  => 'info',
             'days'   => 30, // keep logs for 30 days (1 month rotation)
         ],
+        'order_emx'    => [
+            'driver' => 'daily',
+            'path'   => storage_path('logs/order_emx.log'),
+            'level'  => 'info',
+            'days'   => 30, // keep logs for 30 days (1 month rotation)
+        ],
         'health'          => [
             'driver' => 'daily',
             'path'   => storage_path('logs/health.log'),
