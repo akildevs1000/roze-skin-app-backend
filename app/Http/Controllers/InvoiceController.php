@@ -307,7 +307,8 @@ class InvoiceController extends Controller
             'max_content_length' => -1,   // unlimited
         ];
 
-        Log::channel('order_emx')->info('EMX Payload:', $data);
+        Log::channel('order_emx')->info("EMX Payload");
+        Log::channel('order_emx')->info(json_encode($data,JSON_PRETTY_PRINT));
 
         try {
             $response = Http::withOptions($options)

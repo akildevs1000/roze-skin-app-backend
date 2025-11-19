@@ -90,8 +90,11 @@ class TestEMXOrderPayload extends Command
             ],
         ];
 
+        $result = json_encode($data,JSON_PRETTY_PRINT);
+
         // -------------------- LOG ONLY -------------------- //
-        Log::channel('order_emx')->info("TEST EMX PAYLOAD (NO API CALL):", $data);
+        Log::channel('order_emx')->info("TEST EMX PAYLOAD (NO API CALL):");
+        Log::channel('order_emx')->info($result);
 
         $this->info("Payload logged successfully to storage/logs/order_emx.log");
 
