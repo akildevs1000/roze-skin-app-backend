@@ -218,15 +218,19 @@ class InvoiceController extends Controller
 
     public function handleEMXOrder($order_id, $box_dimension = "Small")
     {
+        Log::channel('order_emx')->info('EMX Payload Start:', $order_id);
+
         $order = Order::with("delivery_service")->find($order_id);
 
         if (!$order) {
             Log::channel('order_emx')->info("Order not found: $order_id");
+            Log::channel('order_emx')->info('EMX Payload End:', $order_id);
             return;
         }
 
         if ($order?->delivery_service?->name !== "EMX") {
             Log::channel('order_emx')->info("Order delivery server is not EMX: $order_id");
+            Log::channel('order_emx')->info('EMX Payload End:', $order_id);
             return;
         }
 
@@ -315,12 +319,17 @@ class InvoiceController extends Controller
                     'status' => $response->status(),
                     'body'   => $response->body(),
                 ]);
+
+                Log::channel('order_emx')->info('EMX Payload End:', $order_id);
+
                 return false;
             }
 
             Log::channel('order_emx')->info('EMX API request successful', [
                 'response' => $response->json(),
             ]);
+
+            Log::channel('order_emx')->info('EMX Payload End:', $order_id);
 
             return $response->json();
         } catch (\Exception $e) {
@@ -329,8 +338,12 @@ class InvoiceController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
+            Log::channel('order_emx')->info('EMX Payload End:', $order_id);
+
             return false;
         }
+
+        Log::channel('order_emx')->info('EMX Payload End:', $order_id);
 
         return $data;
     }
