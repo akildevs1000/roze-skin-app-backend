@@ -305,9 +305,32 @@ class InvoiceController extends Controller
 
         Log::info('EMX Payload:', $data);
 
-        Http::withOptions($options)
-            ->withHeaders($headers)
-            ->post(env('EMX_BASE_URL') . "/Shipments/create", $data);
+        try {
+            $response = Http::withOptions($options)
+                ->withHeaders($headers)
+                ->post(env('EMX_BASE_URL') . "/Shipments/create", $data);
+
+            if (!$response->successful()) {
+                Log::error('EMX API returned an error', [
+                    'status' => $response->status(),
+                    'body'   => $response->body(),
+                ]);
+                return false;
+            }
+
+            Log::info('EMX API request successful', [
+                'response' => $response->json(),
+            ]);
+
+            return $response->json();
+        } catch (\Exception $e) {
+            Log::error('EMX API request failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return false;
+        }
 
         return $data;
     }
