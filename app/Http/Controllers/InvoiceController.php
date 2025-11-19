@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class InvoiceController extends Controller
 {
@@ -158,7 +159,7 @@ class InvoiceController extends Controller
                 'order_status' => "completed",
             ]);
 
-            $this->handleEMXOrder($request->all());
+            $this->handleEMXOrder($request->order_id, $request->box_dimension);
 
             DB::commit();
 
@@ -215,11 +216,17 @@ class InvoiceController extends Controller
         return response()->json();
     }
 
-    public function handleEMXOrder($payload)
+    public function handleEMXOrder($order_id, $box_dimension = "Small")
     {
-        $order = Order::with("delivery_service")->find($payload["order_id"]);
+        $order = Order::with("delivery_service")->find($order_id);
+
+        if (!$order) {
+            Log::info("Order not found: $order_id");
+            return;
+        }
 
         if ($order?->delivery_service?->name !== "EMX") {
+            Log::info("Order delivery server is not EMX: $order_id");
             return;
         }
 
@@ -263,7 +270,7 @@ class InvoiceController extends Controller
                 ],
             ],
 
-            "dimensions" => $this->getBoxDimension($payload["box_dimension"] ?? "Small"),
+            "dimensions" => $this->getBoxDimension($box_dimension ?? "Small"),
 
             "account" => [
                 "number" => env("EMX_ACCOUNT_NO"),
@@ -296,6 +303,8 @@ class InvoiceController extends Controller
             'max_content_length' => -1,   // unlimited
         ];
 
+        Log::info('EMX Payload:', $data);
+
         Http::withOptions($options)
             ->withHeaders($headers)
             ->post(env('EMX_BASE_URL') . "/Shipments/create", $data);
@@ -325,6 +334,6 @@ class InvoiceController extends Controller
                 "unit" => "Centimetre",
             ]
         ];
-        return $arr[$box];
+        return $arr[$box] ?? $arr["Small"]; // fallback to Small if invalid
     }
 }
