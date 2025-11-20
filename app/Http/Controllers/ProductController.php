@@ -211,8 +211,14 @@ class ProductController extends Controller
 
             $product = Product::where('item_number', $itemNumber)->first();
 
-            $data['display_image'] = $product->display_image ?? null;
+            if ($product) {
+                $data['item_name'] .= " (" . $product->price . ")"; // append price
+                $data['display_image'] = $product->display_image;
+            } else {
+                $data['display_image'] = null;
+            }
         }
+
 
         return array_values($counts);
     }
