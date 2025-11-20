@@ -1,6 +1,8 @@
 <?php
+
 namespace App\Http\Controllers;
 
+use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductMapping;
@@ -157,54 +159,57 @@ class ProductController extends Controller
 
     public function report()
     {
+        $from  = request('from') ? request('from') . " 00:00:00" : date("Y-m-d 00:00:00");
+        $to    = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
 
-        $product_id = request('product_id');
-        $from       = request('from') ? request('from') . " 00:00:00" : date("Y-m-d 00:00:00");
-        $to         = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
-        $dates      = [$from, $to];
+        // item_number => name
+        $productNames = Product::where("id", request("product_id"))->pluck('name', 'item_number')->toArray();
 
-        $inventoryData = [];
+        $orders = Order::whereBetween('order_date', [$from, $to])
+            ->orderByDesc('id')
+            ->get();
 
-        // return OrderItem::count();
+        $counts = [];
 
-        OrderItem::with('product.mappings.inventory_item') // load mappings only
-            ->when(request()->filled("product_id"), function ($q) use ($product_id) {
-                $q->where('product_id', $product_id);
-            })
+        foreach ($orders as $order) {
 
-            ->whereHas('order.invoice', function ($q) use ($dates) {
-                $q->whereBetween('created_at', $dates);
-            })
+            $items = $order->items; // items already cast to array in model
 
-            // ->whereHas('order', function ($q) {
-            //     $q->where('order_status', 'completed');
-            // })
+            if (!is_array($items)) continue;
 
-            ->chunk(500, function ($orderItems) use (&$inventoryData) {
+            foreach ($items as $item) {
 
-                foreach ($orderItems as $orderItem) {
+                // product_id in items JSON = item_number in product table
+                $productId = (string) $item["product_id"];
 
-                    $mappings = $orderItem->product->mappings ?? [];
-
-                    foreach ($mappings as $map) {
-
-                        $inventoryId = $map->inventory_item_id; // get directly from mapping
-                        $quantity    = $orderItem->product->qty * $orderItem->quantity;
-
-                        if (! isset($inventoryData[$inventoryId])) {
-                            $inventoryData[$inventoryId] = [
-                                'qty'           => 0,
-                                'item_number'   => $map->inventory_item->item_number,
-                                'item_name'     => $map->inventory_item->name,
-                                'display_image' => $map->inventory_item->display_image,
-                            ];
-                        }
-
-                        $inventoryData[$inventoryId]['qty'] += $quantity;
-                    }
+                if (!isset($productNames[$productId])) {
+                    continue;
                 }
-            });
 
-        return response()->json(array_values($inventoryData));
+                $productName = $productNames[$productId];
+
+                if (!isset($counts[$productId])) {
+                    $counts[$productId] = [
+                        'qty'           => 0,
+                        'item_number'   => $productId,
+                        'item_name'     => $productName,
+                        'display_image' => null // will fill later
+                    ];
+                }
+
+                // Add quantity
+                $counts[$productId]['qty'] += (int) $item["quantity"];
+            }
+        }
+
+        // Attach display image
+        foreach ($counts as $itemNumber => &$data) {
+
+            $product = Product::where('item_number', $itemNumber)->first();
+
+            $data['display_image'] = $product->display_image ?? null;
+        }
+
+        return array_values($counts);
     }
 }
