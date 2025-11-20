@@ -163,7 +163,11 @@ class ProductController extends Controller
         $to    = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
 
         // item_number => name
-        $productNames = Product::where("id", request("product_id"))->pluck('name', 'item_number')->toArray();
+        $productNames = Product::when(request()->filled('product_id'), function ($query) {
+            $query->where('id', request('product_id'));
+        })
+            ->pluck('name', 'item_number')
+            ->toArray();
 
         $orders = Order::whereBetween('order_date', [$from, $to])
             ->orderByDesc('id')
