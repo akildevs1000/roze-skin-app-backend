@@ -159,7 +159,7 @@ class InvoiceController extends Controller
                 'order_status' => "completed",
             ]);
 
-            $this->handleEMXOrder($request->order_id, $request->box_dimension);
+            // $this->handleEMXOrder($request->order_id, $request->box_dimension);
 
             DB::commit();
 
