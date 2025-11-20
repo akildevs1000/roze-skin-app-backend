@@ -427,14 +427,26 @@ class InvoiceController extends Controller
             return false;
         }
 
-        // Auto-download for Windows user
+        // Auto-save to Windows Downloads
         if (PHP_OS_FAMILY === "Windows") {
-            $downloads = getenv("USERPROFILE") . "\\Downloads\\{$awb}.pdf";
-            file_put_contents($downloads, $response->body());
 
-            Log::channel('order_emx')->info("📥 Label auto-downloaded", [
-                'path' => $downloads
-            ]);
+            // Define folder path inside Downloads
+            $folderName = "EMX_AWB_NUMBERS"; // folder name
+            $folderPath = getenv("USERPROFILE") . "\\Downloads\\{$folderName}";
+
+            // Create folder if it doesn't exist
+            if (!is_dir($folderPath)) {
+                mkdir($folderPath, 0777, true); // true = recursive
+            }
+
+            // File path inside the folder
+            $downloadsPath = $folderPath . "\\{$awb}.pdf";
+
+            // Save PDF
+            file_put_contents($downloadsPath, $response->body());
+
+            $this->info("📥 Label auto-downloaded: $downloadsPath");
+            Log::channel('order_emx')->info("Label auto-downloaded", ['path' => $downloadsPath]);
         }
 
         return true;

@@ -48,8 +48,22 @@ class TestEmxLabelCommand extends Command
 
         // Auto-save to Windows Downloads
         if (PHP_OS_FAMILY === "Windows") {
-            $downloadsPath = getenv("USERPROFILE") . "\\Downloads\\{$awb}.pdf";
+
+            // Define folder path inside Downloads
+            $folderName = "EMX_AWB_NUMBERS"; // folder name
+            $folderPath = getenv("USERPROFILE") . "\\Downloads\\{$folderName}";
+
+            // Create folder if it doesn't exist
+            if (!is_dir($folderPath)) {
+                mkdir($folderPath, 0777, true); // true = recursive
+            }
+
+            // File path inside the folder
+            $downloadsPath = $folderPath . "\\{$awb}.pdf";
+
+            // Save PDF
             file_put_contents($downloadsPath, $response->body());
+
             $this->info("📥 Label auto-downloaded: $downloadsPath");
             Log::channel('order_emx')->info("Label auto-downloaded", ['path' => $downloadsPath]);
         }
