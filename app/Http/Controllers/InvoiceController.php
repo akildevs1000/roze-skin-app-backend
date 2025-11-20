@@ -228,11 +228,11 @@ class InvoiceController extends Controller
             return;
         }
 
-        if ($order?->delivery_service?->name !== "EMX") {
-            Log::channel('order_emx')->info("Order delivery server is not EMX: $order_id");
-            Log::channel('order_emx')->info("EMX Payload End: $order_id");
-            return;
-        }
+        // if ($order?->delivery_service?->name !== "EMX") {
+        //     Log::channel('order_emx')->info("Order delivery server is not EMX: $order_id");
+        //     Log::channel('order_emx')->info("EMX Payload End: $order_id");
+        //     return;
+        // }
 
         $customer =  $order->customer;
 
