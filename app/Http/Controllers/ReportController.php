@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\BusinessSource;
@@ -21,7 +22,9 @@ class ReportController extends Controller
     {
         $data = [];
 
-        $products = Product::get(["item_number", "description"])->keyBy('description');
+        $products = Product::when(request()->filled('product_id'), function ($query) {
+            $query->where('id', request('product_id'));
+        })->get(["item_number", "description"])->keyBy('description');
 
         foreach ($period as $date) {
             $ordersForDate = $orders->filter(function ($order) use ($date) {
@@ -49,7 +52,6 @@ class ReportController extends Controller
                     'price'     => number_format($totalPrice ?? 0, 2),
                     'quantity'  => $totalQuantity ?? 0,
                 ];
-
             }
         }
 
@@ -134,7 +136,7 @@ class ReportController extends Controller
                 // Filter orders for this date + method
                 $filtered = $orders->filter(function ($order) use ($date, $method) {
                     return date("Y-m-d", strtotime($order->order_date)) === $date
-                    && strtoupper($order->payment_method) === $method;
+                        && strtoupper($order->payment_method) === $method;
                 });
 
                 $totalQuantity = 0;
@@ -162,7 +164,7 @@ class ReportController extends Controller
     {
         return Order::orderByDesc('id')
             ->whereNot("order_status", Order::CANCELLED)
-        // ->where("order_id","55524")
+            // ->where("order_id","55524")
             ->whereBetween('order_date', [$from . " 00:00:00", $to . " 23:59:59"])
             ->withOut("customer", "payments")
             ->with("business_source")
