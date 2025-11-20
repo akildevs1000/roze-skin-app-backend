@@ -282,7 +282,7 @@ class InvoiceController extends Controller
 
             "productCode" => "Domestic",
             "serviceType" => "None",
-            "printType" => "AWBOnly",
+            "printType" => "AWBAndLabel", // LabelOnly, AWBOnly,AWBAndLabel,None
             "numberOfPieces" => 1,
             "referenceNumber1" => "any referece number",
             "specialNotes" => $order->special_instructions ?? "Fragile handle with care",
@@ -338,7 +338,7 @@ class InvoiceController extends Controller
             $labelUrl = $response['labelUrl'] ?? null;
 
             $order->tracking_number = $awb;
-            
+
             $order->save();
 
             Log::channel('order_emx')->info("📦 EMX Shipment Created", [
@@ -349,7 +349,6 @@ class InvoiceController extends Controller
             $this->printLabel($awb, $labelUrl);
 
             return $response;
-
         } catch (\Exception $e) {
             Log::channel('order_emx')->error('EMX API request failed', [
                 'error' => $e->getMessage(),
