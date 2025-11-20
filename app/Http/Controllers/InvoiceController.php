@@ -159,7 +159,7 @@ class InvoiceController extends Controller
                 'order_status' => "completed",
             ]);
 
-            // $this->handleEMXOrder($request->order_id, $request->box_dimension);
+            $this->handleEMXOrder($request->order_id, $request->box_dimension);
 
             DB::commit();
 
@@ -332,7 +332,24 @@ class InvoiceController extends Controller
 
             Log::channel('order_emx')->info("EMX Payload End: $order_id");
 
-            return $response->json();
+            $response = $response->json();
+
+            $awb = $response['awbNumber'] ?? null;
+            $labelUrl = $response['labelUrl'] ?? null;
+
+            $order->tracking_number = $awb;
+            
+            $order->save();
+
+            Log::channel('order_emx')->info("📦 EMX Shipment Created", [
+                'awb'       => $awb,
+                'labelUrl'  => $labelUrl
+            ]);
+
+            $this->printLabel($awb, $labelUrl);
+
+            return $response;
+
         } catch (\Exception $e) {
             Log::channel('order_emx')->error('EMX API request failed', [
                 'error' => $e->getMessage(),
@@ -372,5 +389,55 @@ class InvoiceController extends Controller
             ]
         ];
         return $arr[$box] ?? $arr["Small"]; // fallback to Small if invalid
+    }
+
+    public function printLabel($awb, $labelUrl = null)
+    {
+        $apiKey = env("EMX_ORDER_CREATE_API_KEY");
+
+        if (!$apiKey) {
+            Log::channel('order_emx')->error("❌ EMX API Key missing.");
+            return false;
+        }
+
+        // EMX returns full URL; use it if provided
+        $url = $labelUrl ?? "https://local.epservices.ae/api/Label/print?awb={$awb}";
+
+        Log::channel('order_emx')->info("📄 Fetching EMX Label", [
+            'awb' => $awb,
+            'url' => $url,
+        ]);
+
+        try {
+            $response = Http::withoutVerifying()->withHeaders([
+                'x-api-key' => $apiKey,
+                'Accept'    => 'application/pdf',
+            ])->get($url);
+        } catch (\Exception $e) {
+            Log::channel('order_emx')->error("❌ Failed EMX label API call", [
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+
+        if (!$response->successful()) {
+            Log::channel('order_emx')->error("❌ EMX Label Download Failed", [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
+            return false;
+        }
+
+        // Auto-download for Windows user
+        if (PHP_OS_FAMILY === "Windows") {
+            $downloads = getenv("USERPROFILE") . "\\Downloads\\{$awb}.pdf";
+            file_put_contents($downloads, $response->body());
+
+            Log::channel('order_emx')->info("📥 Label auto-downloaded", [
+                'path' => $downloads
+            ]);
+        }
+
+        return true;
     }
 }
