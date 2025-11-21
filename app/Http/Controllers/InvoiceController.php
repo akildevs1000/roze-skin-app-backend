@@ -228,6 +228,16 @@ class InvoiceController extends Controller
             return;
         }
 
+        $awb = $order->tracking_number;
+
+        if ($awb) {
+            $this->printLabel($awb);
+            Log::channel('order_emx')->info("Skipping EMX Shipment becasue awbNumber is already sent to EMX: $awb");
+            return;
+        }
+
+        Log::channel('order_emx')->info("Stop Temp : $order_id");
+
         // if ($order?->delivery_service?->name !== "EMX") {
         //     Log::channel('order_emx')->info("Order delivery server is not EMX: $order_id");
         //     Log::channel('order_emx')->info("EMX Payload End: $order_id");
@@ -282,7 +292,7 @@ class InvoiceController extends Controller
 
             "productCode" => "Domestic",
             "serviceType" => "None",
-            "printType" => "AWBAndLabel", // LabelOnly, AWBOnly,AWBAndLabel,None
+            "printType" => "AWBAndLabel", // LabelOnly (not working), AWBOnly,AWBAndLabel,None
             "numberOfPieces" => 1,
             "referenceNumber1" => "any referece number",
             "specialNotes" => $order->special_instructions ?? "Fragile handle with care",
@@ -427,27 +437,23 @@ class InvoiceController extends Controller
             return false;
         }
 
-        // Auto-save to Windows Downloads
-        if (PHP_OS_FAMILY === "Windows") {
+        // Define folder path inside Downloads
+        $folderName = "EMX_AWB_NUMBERS"; // folder name
+        $folderPath = getenv("USERPROFILE") . "\\Downloads\\{$folderName}";
 
-            // Define folder path inside Downloads
-            $folderName = "EMX_AWB_NUMBERS"; // folder name
-            $folderPath = getenv("USERPROFILE") . "\\Downloads\\{$folderName}";
-
-            // Create folder if it doesn't exist
-            if (!is_dir($folderPath)) {
-                mkdir($folderPath, 0777, true); // true = recursive
-            }
-
-            // File path inside the folder
-            $downloadsPath = $folderPath . "\\{$awb}.pdf";
-
-            // Save PDF
-            file_put_contents($downloadsPath, $response->body());
-
-            $this->info("📥 Label auto-downloaded: $downloadsPath");
-            Log::channel('order_emx')->info("Label auto-downloaded", ['path' => $downloadsPath]);
+        // Create folder if it doesn't exist
+        if (!is_dir($folderPath)) {
+            mkdir($folderPath, 0777, true); // true = recursive
         }
+
+        // File path inside the folder
+        $downloadsPath = $folderPath . "\\{$awb}.pdf";
+
+        // Save PDF
+        file_put_contents($downloadsPath, $response->body());
+
+        $this->info("📥 Label auto-downloaded: $downloadsPath");
+        Log::channel('order_emx')->info("Label auto-downloaded", ['path' => $downloadsPath]);
 
         return true;
     }
