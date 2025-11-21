@@ -437,9 +437,13 @@ class InvoiceController extends Controller
         }
 
         // return PDF to your browser for download
+        $fileName = $awb ? $awb . '.pdf' : 'invoice.pdf';
+
+        Log::channel('order_emx')->error("FileName $fileName");
+
         return response($response->body())
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'attachment; filename="' . $awb . '.pdf"');
+            ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"');
 
         // Define folder path inside Downloads
         $folderName = "EMX_AWB_NUMBERS"; // folder name
