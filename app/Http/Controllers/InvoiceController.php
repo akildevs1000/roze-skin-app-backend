@@ -236,7 +236,7 @@ class InvoiceController extends Controller
             return;
         }
 
-        Log::channel('order_emx')->info("Stop Temp : $order_id");
+        Log::channel('order_emx')->info("Sending to EMX Shipment becasue for this order: $order_id");
 
         // if ($order?->delivery_service?->name !== "EMX") {
         //     Log::channel('order_emx')->info("Order delivery server is not EMX: $order_id");
