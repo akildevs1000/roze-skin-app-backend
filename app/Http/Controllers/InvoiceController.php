@@ -441,9 +441,9 @@ class InvoiceController extends Controller
 
         Log::channel('order_emx')->error("FileName $fileName");
 
-        return response($pdfData)
+        return response($response->body())
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'attachment; filename="' . $awb . '.pdf"')
+            ->header('Content-Disposition', 'attachment; filename="' . $fileName . '.pdf"')
             ->header('Access-Control-Expose-Headers', 'Content-Disposition');
 
 
