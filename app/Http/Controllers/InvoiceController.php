@@ -443,7 +443,7 @@ class InvoiceController extends Controller
 
         return response($response->body())
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'attachment; filename="' . $fileName . '.pdf"')
+            ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"')
             ->header('Access-Control-Expose-Headers', 'Content-Disposition');
 
 
