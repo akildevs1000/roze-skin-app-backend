@@ -159,9 +159,11 @@ class InvoiceController extends Controller
                 'order_status' => "completed",
             ]);
 
-            $this->handleEMXOrder($request->order_id, $request->box_dimension);
 
             DB::commit();
+
+            return $this->handleEMXOrder($request->order_id, $request->box_dimension);
+
 
             return response()->json([
                 'success' => true,
@@ -231,9 +233,8 @@ class InvoiceController extends Controller
         $awb = $order->tracking_number;
 
         if ($awb) {
-            $this->printLabel($awb);
             Log::channel('order_emx')->info("Skipping EMX Shipment becasue awbNumber is already sent to EMX: $awb");
-            return;
+            return $this->printLabel($awb);
         }
 
         Log::channel('order_emx')->info("Sending to EMX Shipment becasue for this order: $order_id");
@@ -356,9 +357,7 @@ class InvoiceController extends Controller
                 'labelUrl'  => $labelUrl
             ]);
 
-            $this->printLabel($awb, $labelUrl);
-
-            return $response;
+            return $this->printLabel($awb, $labelUrl);
         } catch (\Exception $e) {
             Log::channel('order_emx')->error('EMX API request failed', [
                 'error' => $e->getMessage(),
