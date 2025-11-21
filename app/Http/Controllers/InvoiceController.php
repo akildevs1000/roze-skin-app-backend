@@ -437,6 +437,11 @@ class InvoiceController extends Controller
             return false;
         }
 
+        // return PDF to your browser for download
+        return response($response->body())
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'attachment; filename="' . $awb . '.pdf"');
+
         // Define folder path inside Downloads
         $folderName = "EMX_AWB_NUMBERS"; // folder name
         $folderPath = getenv("USERPROFILE") . "\\Downloads\\{$folderName}";
