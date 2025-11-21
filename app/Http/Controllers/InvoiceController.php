@@ -282,7 +282,7 @@ class InvoiceController extends Controller
 
             "productCode" => "Domestic",
             "serviceType" => "None",
-            "printType" => "AWBAndLabel", // LabelOnly, AWBOnly,AWBAndLabel,None
+            "printType" => "LabelOnly", // LabelOnly, AWBOnly,AWBAndLabel,None
             "numberOfPieces" => 1,
             "referenceNumber1" => "any referece number",
             "specialNotes" => $order->special_instructions ?? "Fragile handle with care",
@@ -335,7 +335,7 @@ class InvoiceController extends Controller
             $response = $response->json();
 
             $awb = $response['awbNumber'] ?? null;
-            // $labelUrl = $response['labelUrl'] ?? null;
+            $labelUrl = $response['labelUrl'] ?? null;
 
             $order->tracking_number = $awb;
 
@@ -346,7 +346,7 @@ class InvoiceController extends Controller
                 'labelUrl'  => $labelUrl
             ]);
 
-            // $this->printLabel($awb, $labelUrl);
+            $this->printLabel($awb, $labelUrl);
 
             return $response;
         } catch (\Exception $e) {
