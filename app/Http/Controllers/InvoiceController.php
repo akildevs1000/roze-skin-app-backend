@@ -441,9 +441,11 @@ class InvoiceController extends Controller
 
         Log::channel('order_emx')->error("FileName $fileName");
 
-        return response($response->body())
+        return response($pdfData)
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"');
+            ->header('Content-Disposition', 'attachment; filename="' . $awb . '.pdf"')
+            ->header('Access-Control-Expose-Headers', 'Content-Disposition');
+
 
         // Define folder path inside Downloads
         $folderName = "EMX_AWB_NUMBERS"; // folder name
