@@ -282,7 +282,7 @@ class InvoiceController extends Controller
 
             "productCode" => "Domestic",
             "serviceType" => "None",
-            "printType" => "LabelOnly", // LabelOnly, AWBOnly,AWBAndLabel,None
+            "printType" => "AWBAndLabel", // LabelOnly, AWBOnly,AWBAndLabel,None
             "numberOfPieces" => 1,
             "referenceNumber1" => "any referece number",
             "specialNotes" => $order->special_instructions ?? "Fragile handle with care",
