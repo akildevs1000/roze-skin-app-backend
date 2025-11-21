@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 
 class TestEmxLabelCommand extends Command
 {
-    protected $signature = 'emx:test-label {awb=1000037991324}';
+    protected $signature = 'emx:test-label {awb=1000038016196}';
     protected $description = 'Test EMX label print API using an AWB number';
 
     public function handle()
