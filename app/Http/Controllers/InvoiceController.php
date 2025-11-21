@@ -335,7 +335,7 @@ class InvoiceController extends Controller
             $response = $response->json();
 
             $awb = $response['awbNumber'] ?? null;
-            $labelUrl = $response['labelUrl'] ?? null;
+            // $labelUrl = $response['labelUrl'] ?? null;
 
             $order->tracking_number = $awb;
 
@@ -346,7 +346,7 @@ class InvoiceController extends Controller
                 'labelUrl'  => $labelUrl
             ]);
 
-            $this->printLabel($awb, $labelUrl);
+            // $this->printLabel($awb, $labelUrl);
 
             return $response;
         } catch (\Exception $e) {
