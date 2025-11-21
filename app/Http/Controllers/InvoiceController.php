@@ -452,7 +452,7 @@ class InvoiceController extends Controller
         // Save PDF
         file_put_contents($downloadsPath, $response->body());
 
-        $this->info("📥 Label auto-downloaded: $downloadsPath");
+        Log::channel('order_emx')->info("📥 Label auto-downloaded: $downloadsPath");
         Log::channel('order_emx')->info("Label auto-downloaded", ['path' => $downloadsPath]);
 
         return true;
