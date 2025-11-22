@@ -265,7 +265,7 @@ class InvoiceController extends Controller
                     "line1" => "DRS JAFFER'S BLDG - SHOP NO 4 - Al Nahdha street - 83481 - Al Souq Al Kabeer",
                     "city" => "Dubai",
                     "countryCode" => "AE",
-                    "zipCode" => "00000",
+                    "zipCode" => "83481",
                 ],
             ],
 
@@ -295,7 +295,7 @@ class InvoiceController extends Controller
             "serviceType" => "None",
             "printType" => "AWBAndLabel", // LabelOnly (not working), AWBOnly,AWBAndLabel,None
             "numberOfPieces" => 1,
-            "referenceNumber1" => "any referece number",
+            "referenceNumber1" => $order->order_id ?? "",
             "specialNotes" => $order->special_instructions ?? "Fragile handle with care",
             "deliveryType" => "DoorToDoor",
             "contentType" => "NonDocument",
