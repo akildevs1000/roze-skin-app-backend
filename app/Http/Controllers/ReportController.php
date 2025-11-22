@@ -162,8 +162,13 @@ class ReportController extends Controller
 
     public function getOrders($from, $to)
     {
+        $order_status = request('order_status');
+
         return Order::orderByDesc('id')
-            ->whereNot("order_status", Order::CANCELLED)
+            ->when($order_status, function ($q) use ($order_status) {
+                $q->where('order_status', $order_status);
+            })
+            // ->whereNot("order_status", Order::CANCELLED)
             // ->where("order_id","55524")
             ->whereBetween('order_date', [$from . " 00:00:00", $to . " 23:59:59"])
             ->withOut("customer", "payments")

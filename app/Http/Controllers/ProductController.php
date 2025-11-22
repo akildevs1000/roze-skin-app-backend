@@ -161,6 +161,7 @@ class ProductController extends Controller
     {
         $from  = request('from') ? request('from') . " 00:00:00" : date("Y-m-d 00:00:00");
         $to    = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
+        $order_status = request('order_status');
 
         // item_number => name
         $productNames = Product::when(request()->filled('product_id'), function ($query) {
@@ -170,6 +171,9 @@ class ProductController extends Controller
             ->toArray();
 
         $orders = Order::whereBetween('order_date', [$from, $to])
+            ->when($order_status, function ($q) use ($order_status) {
+                $q->where('order_status', $order_status);
+            })
             ->orderByDesc('id')
             ->get();
 
