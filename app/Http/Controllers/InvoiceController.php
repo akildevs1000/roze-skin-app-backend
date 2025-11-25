@@ -295,7 +295,7 @@ class InvoiceController extends Controller
             "serviceType" => "None",
             "printType" => "AWBAndLabel", // LabelOnly (not working), AWBOnly,AWBAndLabel,None
             "numberOfPieces" => 1,
-            "referenceNumber1" => $order->order_id ?? "",
+            "referenceNumber1" => (string) ($order->order_id ?? ""),
             "specialNotes" => $order->special_instructions ?? "Fragile handle with care",
             "deliveryType" => "DoorToDoor",
             "contentType" => "NonDocument",
