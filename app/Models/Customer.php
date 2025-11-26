@@ -70,9 +70,7 @@ class Customer extends Model
 
     public static function storeOrUpdateCustomerWithAddresses(array $data)
     {
-        $customer = self::where('phone', $data['customer']['phone'])
-            ->orWhere('email', $data['customer']['email'] ?? '')
-            ->first();
+        $customer = self::where('phone', $data['customer']['phone'])->first();
 
         if ($customer) {
             // Update
