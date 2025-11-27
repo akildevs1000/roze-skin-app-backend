@@ -246,6 +246,7 @@ class InvoiceController extends Controller
         // }
 
         $customer =  $order->customer;
+        $isCod = $order->payment_method == 'COD';
 
         $data = [
             "weight" => [
@@ -300,10 +301,10 @@ class InvoiceController extends Controller
             "deliveryType" => "DoorToDoor",
             "contentType" => "NonDocument",
 
-            "isCod" => $order->payment_method == 'COD',
+            "isCod" => $isCod,
 
             "coDAmount" => [
-                "amount" => $order->total,
+                "amount" => $isCod ? $order->total : "00.00",
                 "currency" => $order->currency ?? "AED",
             ],
         ];
