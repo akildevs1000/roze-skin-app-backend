@@ -246,7 +246,7 @@ class InvoiceController extends Controller
         // }
 
         $customer =  $order->customer;
-        $isCod = $order->payment_method == 'COD';
+        $isCod = $order->payment_method == 'COD' || $order->payment_method == 'cod';
 
         $data = [
             "weight" => [
