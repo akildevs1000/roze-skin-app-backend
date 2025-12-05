@@ -303,6 +303,8 @@ class InvoiceController extends Controller
 
             "isCod" => $isCod,
 
+            "commodityDescription" => "Medicine",
+
             "declaredValue" => [
                 "amount" => $order->total,
                 "currency" => $order->currency ?? "AED",
