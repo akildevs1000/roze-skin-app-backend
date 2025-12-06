@@ -527,6 +527,6 @@ class InvoiceController extends Controller
 
         $pdf = Pdf::loadView('pdf.awb', compact('data'))->setPaper('A4', 'portrait');
 
-        return $pdf->stream($awb . '.pdf');
+        return $pdf->stream($awb . '.pdf')->header('Content-Disposition', 'inline; filename="' . $awb . '.pdf"');
     }
 }
