@@ -132,11 +132,21 @@
                     </tr>
                 </table>
             </td>
-            <td rowspan="3" align="center" valign="top" style="border-left: none;">
-                <div style="background: #000000;"><strong style="font-size: 18pt;color:#FFFFFF;">Door To Door</strong></div>
+            <td rowspan="3" align="center" valign="top" style="border-left: none; position: relative;">
+
+                <div style="background: #000000; text-align: center;position: absolute; top: 0; left: 0; width: 98%; height: 40px; line-height: 40px;">
+                    <strong style="font-size: 18pt;color:#FFFFFF;">Door To Door</strong>
+                </div>
                 <div style="height: 100px; width: 90%; background-color: #FFFFFF; margin: 5px 0;"></div>
-                <div style="font-size: 16pt; font-weight: bold; margin-top: 5px; transform: rotate(-90deg);">
-                    {{$data['tracking_number']}}
+                <!-- Centered rotated container -->
+                <div style="position: absolute; top: 20%; left: 50%; transform: translate(-50%, -50%) rotate(-90deg); text-align: center;">
+                    <img
+                        src="data:image/png;base64,{{ DNS1D::getBarcodePNG($data['tracking_number'], 'C128', 2, 50) }}"
+                        alt="barcode"
+                        style="display:block; margin: auto;">
+                    <div style="font-size: 12pt; font-weight: bold; margin-top: 5px;">
+                        {{$data['tracking_number']}}
+                    </div>
                 </div>
             </td>
         </tr>
