@@ -6,6 +6,7 @@ use App\Http\Requests\Invoice\ValidationRequest;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Order;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -234,7 +235,7 @@ class InvoiceController extends Controller
 
         if ($awb) {
             Log::channel('order_emx')->info("Skipping EMX Shipment becasue awbNumber is already sent to EMX: $awb");
-            return $this->printLabel($awb);
+            return $this->show($order_id, $box_dimension);
         }
 
         Log::channel('order_emx')->info("Sending to EMX Shipment becasue for this order: $order_id");
@@ -365,7 +366,7 @@ class InvoiceController extends Controller
                 'labelUrl'  => $labelUrl
             ]);
 
-            return $this->printLabel($awb, $labelUrl);
+            return $this->show($order_id, $box_dimension);
         } catch (\Exception $e) {
             Log::channel('order_emx')->error('EMX API request failed', [
                 'error' => $e->getMessage(),
@@ -474,5 +475,69 @@ class InvoiceController extends Controller
         Log::channel('order_emx')->info("Label auto-downloaded", ['path' => $downloadsPath]);
 
         return true;
+    }
+
+    public function show($order_id, $box_dimension = "Small")
+    {
+        Log::channel('order_emx')->info("EMX Payload Start: $order_id");
+
+        $order = Order::with("delivery_service")->find($order_id);
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found: ' . $order_id,
+            ], 404);
+        }
+
+        $awb = $order->tracking_number;
+
+        $customer =  $order->customer;
+
+        $isCod = $order->payment_method == 'COD' || $order->payment_method == 'cod';
+
+        $dimensions = $this->getBoxDimension($box_dimension ?? "Small");
+
+        $data = [
+            // Top Info
+            'printed_on' => now()->format('d-M-Y H:i:s') . ' (UTC+04:00) Gulf Standard Time (Dubai)',
+            'account_number' => env("EMX_ACCOUNT_NO"),
+            'tracking_number' => $awb,
+
+            // Shipper Info
+            'shipper_name' => 'Roze Skincare',
+            'shipper_country' => 'AE',
+            'shipper_city' => 'Dubai',
+            'shipper_address' => "DRS JAFFER'S BLDG - SHOP NO 4 - Al Nahdha street - 83481 - Al Souq Al Kabeer",
+            'shipper_phone' => '0529048025 0529048025',
+
+
+            // Receiver Info
+            'receiver_name' => $customer->full_name,
+            'receiver_country' => 'AE',
+            'receiver_city' => $customer?->shipping_address?->city ?? 'Dubai',
+            'receiver_address' =>  $customer?->shipping_address?->address_1 ?? "No Address given",
+            'receiver_phone' => $customer->whatsapp . " " . $customer->phone,
+
+            // Content Details
+            'content_type' => 'NonDocument',
+            'weight' => '250.0',
+            'length' => $dimensions["length"] . '.0',
+            'width' => $dimensions["width"] . '.0',
+            'height' => $dimensions["height"] . '.0',
+
+            // Shipment & Other Info
+            'reference' => (string) ($order->order_id ?? ""),
+            // 'payment_type' => 'COD',
+            'declared_value' => $order->total,
+            'cod_value' => $isCod ? $order->total : "00.00",
+            'special_notes' => $order->special_instructions ?? "Fragile handle with care",
+            'service_type' => 'None',
+            'items' => $order->items,
+        ];
+
+        $pdf = Pdf::loadView('pdf.awb', compact('data'))->setPaper('A4', 'portrait');
+
+        return $pdf->stream($awb . '.pdf');
     }
 }
