@@ -234,7 +234,7 @@ class InvoiceController extends Controller
         $awb = $order->tracking_number;
 
         if ($awb) {
-            Log::channel('order_emx')->info("Skipping EMX Shipment becasue awbNumber is already sent to EMX: $awb");
+            Log::channel('order_emx')->info("Francis Skipping EMX Shipment becasue awbNumber is already sent to EMX: $awb");
             return $this->show($order, $box_dimension);
         }
 
@@ -329,6 +329,8 @@ class InvoiceController extends Controller
 
         Log::channel('order_emx')->info("EMX Payload");
         Log::channel('order_emx')->info(json_encode($data, JSON_PRETTY_PRINT));
+
+        return $this->show($order, $box_dimension);
 
         try {
             $response = Http::withOptions($options)
