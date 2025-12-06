@@ -13,6 +13,7 @@
         "laravel/sanctum": "^2.14.1",
         "laravel/tinker": "^2.7",
         "league/flysystem-aws-s3-v3": "3.0",
+        "milon/barcode": "^12.0",
         "setasign/fpdf": "^1.8",
         "setasign/fpdi": "^2.6",
         "spatie/laravel-backup": "^8.1",
