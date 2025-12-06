@@ -3,6 +3,7 @@
 use App\Http\Controllers\AkilSecurity\CatalogCategoryController;
 use App\Http\Controllers\AkilSecurity\CatalogController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AwbController;
 use App\Http\Controllers\BusinessSourceController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\CustomerController;
@@ -121,3 +122,4 @@ Route::get('order-items-list', [OrderItemController::class, "dropDown"]);
 Route::get('order-items', [OrderItemController::class, "index"]);
 
 
+Route::get('/awb/{awb_no}/pdf', [AwbController::class, 'download'])->name('awb.pdf');
