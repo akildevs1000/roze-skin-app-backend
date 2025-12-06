@@ -235,7 +235,7 @@ class InvoiceController extends Controller
 
         if ($awb) {
             Log::channel('order_emx')->info("Skipping EMX Shipment becasue awbNumber is already sent to EMX: $awb");
-            return $this->show($order_id, $box_dimension);
+            return $this->show($order, $box_dimension);
         }
 
         Log::channel('order_emx')->info("Sending to EMX Shipment becasue for this order: $order_id");
@@ -366,7 +366,7 @@ class InvoiceController extends Controller
                 'labelUrl'  => $labelUrl
             ]);
 
-            return $this->show($order_id, $box_dimension);
+            return $this->show($order, $box_dimension);
         } catch (\Exception $e) {
             Log::channel('order_emx')->error('EMX API request failed', [
                 'error' => $e->getMessage(),
@@ -477,19 +477,8 @@ class InvoiceController extends Controller
         return true;
     }
 
-    public function show($order_id, $box_dimension = "Small")
+    public function show($order, $box_dimension = "Small")
     {
-        Log::channel('order_emx')->info("EMX Payload Start: $order_id");
-
-        $order = Order::with("delivery_service")->find($order_id);
-
-        if (!$order) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Order not found: ' . $order_id,
-            ], 404);
-        }
-
         $awb = $order->tracking_number;
 
         $customer =  $order->customer;
