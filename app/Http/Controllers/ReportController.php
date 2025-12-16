@@ -185,14 +185,8 @@ class ReportController extends Controller
         $from   = request('from') ? request('from') : date("Y-m-d");
         $to     = request('to') ? request('to') : date("Y-m-d");
 
-        $order_status = request('order_status');
-
         $orders = Order::orderByDesc('id')
-            ->when($order_status, function ($q) use ($order_status) {
-                $q->where('order_status', $order_status);
-            })
-            // ->whereNot("order_status", Order::CANCELLED)
-            // ->where("order_id","55524")
+            ->where('order_status', "completed")    
             ->whereBetween('order_date', [$from . " 00:00:00", $to . " 23:59:59"])
             ->get()->toArray();
 
