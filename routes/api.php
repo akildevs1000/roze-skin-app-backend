@@ -3,7 +3,6 @@
 use App\Http\Controllers\AkilSecurity\CatalogCategoryController;
 use App\Http\Controllers\AkilSecurity\CatalogController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\AwbController;
 use App\Http\Controllers\BusinessSourceController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\CustomerController;
@@ -102,6 +101,9 @@ Route::get('report-products', [ReportController::class, "products"]);
 Route::get('report-payment-modes', [ReportController::class, "payment_modes"]);
 Route::get('report-sources', [ReportController::class, "sources"]);
 
+Route::get('manifest-report', [ReportController::class, "manifestReport"]);
+Route::get('awb-print-report', [ReportController::class, "awbPrintReport"]);
+
 Route::get('product-report', [ProductController::class, "report"]);
 Route::get('source-report', [BusinessSourceController::class, "report"]);
 Route::get('deliver-service-report', [DeliveryServiceController::class, "report"]);
@@ -120,6 +122,3 @@ Route::get('catalog-category-list', [CatalogCategoryController::class, "dropDown
 
 Route::get('order-items-list', [OrderItemController::class, "dropDown"]);
 Route::get('order-items', [OrderItemController::class, "index"]);
-
-
-Route::get('/awb/{awb_no}/pdf', [AwbController::class, 'download'])->name('awb.pdf');
