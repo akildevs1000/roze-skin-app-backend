@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Order\ValidationRequest;
@@ -125,9 +126,9 @@ class OrderController extends Controller
                 $q->where('order_id', $search);
                 $q->orWhere('tracking_number', $search);
             })
-        // ->when($order_status != "completed", function ($q) use ($order_status) {
-        //     $q->whereHas("invoice", fn($q) => $q->where('status', $order_status));
-        // })
+            // ->when($order_status != "completed", function ($q) use ($order_status) {
+            //     $q->whereHas("invoice", fn($q) => $q->where('status', $order_status));
+            // })
 
             ->when($customer_id, function ($q) use ($customer_id) {
                 $q->where('customer_id', $customer_id);
@@ -149,7 +150,9 @@ class OrderController extends Controller
                 $q->where('payment_method', $payment_method);
             })
 
-            ->whereBetween('order_date', $dates)
+            ->when(! $search, function ($q) use ($dates) {
+                $q->whereBetween('order_date', $dates);
+            })
 
             ->with(['business_source', 'delivery_service', 'invoice'])
 
@@ -273,7 +276,6 @@ class OrderController extends Controller
             Log::channel('orders')->info(json_encode(["request" => $request->all(), "response" => $order], JSON_PRETTY_PRINT));
 
             return $responses;
-
         } catch (\Exception $e) {
             Log::channel('orders')->info(json_encode(["request" => $request->all(), "response" => $e->getMessage()], JSON_PRETTY_PRINT));
         }
@@ -318,13 +320,11 @@ class OrderController extends Controller
                         'success' => false,
                         'message' => 'Invoice not found.',
                     ], 404);
-
                 }
 
                 $invoice->update([
                     "status" => 'Cancelled',
                 ]);
-
             }
 
             $order->update([
@@ -339,7 +339,6 @@ class OrderController extends Controller
                 'message' => 'Order has been cancelled.',
                 'order'   => $order,
             ]);
-
         } catch (\Exception $e) {
             $this->recordLog("Error while cancelling order.");
 
@@ -454,7 +453,6 @@ class OrderController extends Controller
         ];
 
         Log::channel('order_cancel')->info($message, $logPayload);
-
     }
 
     public function orderQtyByDate(Request $request)
@@ -480,7 +478,7 @@ class OrderController extends Controller
 
         $orders = Order::with('invoice')
             ->whereHas('invoice', fn($q) => $q->whereDate('created_at', '>=', $from)
-                    ->whereDate('created_at', '<=', $to))
+                ->whereDate('created_at', '<=', $to))
             ->get()
             ->groupBy(fn($order) => $order->invoice->created_at->format('Y-m-d'))
             ->map(fn($orders, $date) => [
@@ -489,7 +487,7 @@ class OrderController extends Controller
             ])
             ->toArray();
 
-// Generate all dates in the range
+        // Generate all dates in the range
         $period = CarbonPeriod::create($from, $to);
 
         $result = [];
@@ -502,7 +500,6 @@ class OrderController extends Controller
         }
 
         return $result;
-
     }
 
     public function statsByDate(Request $request)
