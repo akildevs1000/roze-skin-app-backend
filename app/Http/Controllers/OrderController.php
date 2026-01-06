@@ -123,7 +123,7 @@ class OrderController extends Controller
 
         return Order::orderByDesc('id')
             ->when($search, function ($q) use ($search) {
-                $q->where('tracking_id', $search);
+                $q->where('tracking_number', $search);
                 // $q->orWhere('tracking_id', $search);
             })
             // ->when($order_status != "completed", function ($q) use ($order_status) {
