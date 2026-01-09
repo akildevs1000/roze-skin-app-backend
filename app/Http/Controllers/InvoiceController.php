@@ -94,22 +94,37 @@ class InvoiceController extends Controller
     public function stats()
     {
         $now          = Carbon::now();
+        $today        = $now->toDateString();
         $currentMonth = $now->month;
 
-        // Get last month's stats from cache or compute and store them
-        $lastMonthStats = Cache::remember('invoice_stats_last_month', now()->addDays(1), function () use ($now) {
-            $lastMonth = $now->copy()->subMonth()->month;
+        // Last month stats (cached)
+        $lastMonthStats = Cache::remember(
+            'invoice_stats_last_month',
+            now()->addDay(),
+            function () use ($now) {
+                $lastMonth = $now->copy()->subMonth()->month;
 
-            return [
-                'invoices' => Invoice::whereMonth('created_at', $lastMonth)->count(),
-                'income'   => Order::whereHas("invoice")->whereMonth('created_at', $lastMonth)->sum('total'), // this is working fine but i want from invoice from
-            ];
-        });
+                return [
+                    'invoices' => Invoice::whereMonth('created_at', $lastMonth)->count(),
+                    'income'   => Order::whereHas('invoice')
+                        ->whereMonth('created_at', $lastMonth)
+                        ->sum('total'),
+                ];
+            }
+        );
 
-        // Real-time data
+        // Current month
         $ordersThisMonth = Invoice::whereMonth('created_at', $currentMonth)->count();
-        $incomeThisMonth = Order::whereHas("invoice")->whereMonth('created_at', $currentMonth)->sum('total');
-        $totalOrders     = Invoice::count();
+        $incomeThisMonth = Order::whereHas('invoice')
+            ->whereMonth('created_at', $currentMonth)
+            ->sum('total');
+
+        // Daily income (today)
+        $dailyIncome = Order::whereHas('invoice')
+            ->whereDate('created_at', $today)
+            ->sum('total');
+
+        $totalOrders = Invoice::count();
 
         return [
             [
@@ -130,8 +145,15 @@ class InvoiceController extends Controller
                 'value' => "{$lastMonthStats['income']} / $incomeThisMonth",
                 'color' => 'green',
             ],
+            [
+                'label' => 'Today Income',
+                'icon'  => 'mdi-cash',
+                'value' => $dailyIncome,
+                'color' => 'teal',
+            ],
         ];
     }
+
 
     public function store(ValidationRequest $request)
     {
