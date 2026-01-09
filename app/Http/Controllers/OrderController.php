@@ -162,10 +162,11 @@ class OrderController extends Controller
     public function stats()
     {
         $now          = Carbon::now();
+        $today        = $now->toDateString();
         $currentMonth = $now->month;
 
-        // Get last month's stats from cache or compute and store them
-        $lastMonthStats = Cache::remember('order_stats_last_month', now()->addDays(1), function () use ($now) {
+        // Cache last month's stats
+        $lastMonthStats = Cache::remember('order_stats_last_month', now()->addDay(), function () use ($now) {
             $lastMonth = $now->copy()->subMonth()->month;
 
             return [
@@ -174,13 +175,31 @@ class OrderController extends Controller
             ];
         });
 
-        // Real-time data
+        // Monthly stats
         $ordersThisMonth = Order::whereMonth('created_at', $currentMonth)->count();
         $incomeThisMonth = Order::whereMonth('created_at', $currentMonth)->sum('total');
-        $pendingOrders   = Order::whereDoesntHave('invoice')->count();
-        $totalOrders     = Order::count();
+
+        // Daily stats (NEW)
+        $ordersToday = Order::whereDate('created_at', $today)->count();
+        $incomeToday = Order::whereDate('created_at', $today)->sum('total');
+
+        // Other stats
+        $pendingOrders = Order::whereDoesntHave('invoice')->count();
+        $totalOrders   = Order::count();
 
         return [
+            [
+                'label' => 'Today Orders',
+                'icon'  => 'mdi-calendar-today',
+                'value' => $ordersToday,
+                'color' => 'teal',
+            ],
+            [
+                'label' => 'Today Income',
+                'icon'  => 'mdi-currency-usd',
+                'value' => $incomeToday,
+                'color' => 'green',
+            ],
             [
                 'label' => 'Last Month / Current Month (Orders)',
                 'icon'  => 'mdi-cart-outline',
@@ -189,12 +208,12 @@ class OrderController extends Controller
             ],
             [
                 'label' => 'Total Orders',
-                'icon'  => 'mdi-calendar-today',
+                'icon'  => 'mdi-calendar-multiple',
                 'value' => $totalOrders,
                 'color' => 'indigo',
             ],
             [
-                'label' => 'Pending Order',
+                'label' => 'Pending Orders',
                 'icon'  => 'mdi-clock-outline',
                 'value' => $pendingOrders,
                 'color' => 'orange',
@@ -207,6 +226,7 @@ class OrderController extends Controller
             ],
         ];
     }
+
 
     public function store(ValidationRequest $request)
     {
