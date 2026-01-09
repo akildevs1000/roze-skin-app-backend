@@ -120,9 +120,7 @@ class InvoiceController extends Controller
             ->sum('total');
 
         // Daily income (today)
-        $dailyIncome = Order::whereHas('invoice')
-            ->whereDate('created_at', $today)
-            ->sum('total');
+        $dailyIncome = Order::whereDate('created_at', $today)->sum('total');
 
         $totalOrders = Invoice::count();
 
