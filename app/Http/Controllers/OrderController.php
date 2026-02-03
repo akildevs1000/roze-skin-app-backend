@@ -492,6 +492,23 @@ class OrderController extends Controller
 
     public function orderSumByDate(Request $request)
     {
+        // 1. Get dates or default to the current month
+        $from = $request->query('from_date', date("Y-m-01"));
+        $to   = $request->query('to_date', date("Y-m-t"));
+
+        // 2. Use SUM() instead of COUNT()
+        // Replace 'total_price' with your actual column name
+        $query = Order::selectRaw('DATE(created_at) as date, SUM(total_price) as total_sum')
+            ->whereDate('created_at', '>=', $from)
+            ->whereDate('created_at', '<=', $to)
+            ->groupBy('date')
+            ->orderBy('date');
+
+        return $query->get()->toArray();
+    }
+
+    public function orderSumByDate_OLD(Request $request)
+    {
 
         $from = request('from_date') ?? date('Y-m-d');
         $to   = request('to_date') ?? date('Y-m-d');
