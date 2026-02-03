@@ -477,31 +477,28 @@ class OrderController extends Controller
 
     public function orderQtyByDate(Request $request)
     {
-        $from = $request->query('from_date');
-        $to   = $request->query('to_date');
+        $from = $request->query('from_date', date("Y-m-01"));
+        $to   = $request->query('to_date', date("Y-m-t"));
 
         $query = Order::selectRaw('DATE(created_at) as date, COUNT(*) as total')
+            ->whereNot('order_status', Order::CANCELLED)
+            ->whereDate('created_at', '>=', $from)
+            ->whereDate('created_at', '<=', $to)
             ->groupBy('date')
             ->orderBy('date');
-
-        $query->whereDate('created_at', '>=', $from ?? date("Y-m-01"));
-        $query->whereDate('created_at', '<=', $to ?? date("Y-m-t"));
 
         return $query->get()->toArray();
     }
 
     public function orderSumByDate(Request $request)
     {
-        // 1. Get dates or default to the current month
         $from = $request->query('from_date', date("Y-m-01"));
         $to   = $request->query('to_date', date("Y-m-t"));
 
-        // 2. Use SUM() instead of COUNT()
-        // Replace 'total_price' with your actual column name
         $query = Order::selectRaw('DATE(created_at) as date, SUM(total) as total')
+            ->whereNot('order_status', Order::CANCELLED)
             ->whereDate('created_at', '>=', $from)
             ->whereDate('created_at', '<=', $to)
-            ->where('order_status', Order::CANCELLED)
             ->groupBy('date')
             ->orderBy('date');
 
