@@ -498,7 +498,7 @@ class OrderController extends Controller
 
         // 2. Use SUM() instead of COUNT()
         // Replace 'total_price' with your actual column name
-        $query = Order::selectRaw('DATE(created_at) as date, SUM(total) as total_sum')
+        $query = Order::selectRaw('DATE(created_at) as date, SUM(total) as total')
             ->whereDate('created_at', '>=', $from)
             ->whereDate('created_at', '<=', $to)
             ->groupBy('date')
