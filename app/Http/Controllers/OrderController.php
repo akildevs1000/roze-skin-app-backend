@@ -501,6 +501,7 @@ class OrderController extends Controller
         $query = Order::selectRaw('DATE(created_at) as date, SUM(total) as total')
             ->whereDate('created_at', '>=', $from)
             ->whereDate('created_at', '<=', $to)
+            ->where('order_status', Order::CANCELLED)
             ->groupBy('date')
             ->orderBy('date');
 
