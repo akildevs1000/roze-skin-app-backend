@@ -108,7 +108,7 @@
                 <td>{{ $item['customer']['shipping_address']['city'] }}</td>
                 <td>{{ $item['customer']['full_name'] }}</td>
                 <td class="text-right">{{ $item['payment_method'] }}</td>
-                <td style="text-align: right !important;"><img src="{{ public_path('AED.svg') }}" style="width: 15px;"> {{ number_format($item['total'], 2) }}</td>
+                <td style="text-align: right !important;"><img src="{{ public_path('AED.svg') }}" style="width: 10px;"> {{ number_format($item['total'], 2) }}</td>
             </tr>
             @endforeach
         </tbody>
