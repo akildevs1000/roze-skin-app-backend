@@ -38,7 +38,7 @@ class Template extends Model
     const validateFields = [
         "name" => "required|max:50",
         "salutation" => "required|max:100",
-        "body" => "required|max:1000",
+        "body" => "required|max:1500",
         "attachment" => "nullable",
         "action_id" => "required",
         "medium" => "nullable"

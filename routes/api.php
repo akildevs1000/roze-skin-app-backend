@@ -21,6 +21,7 @@ use App\Http\Controllers\StockEntryController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WhatsappClientController;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -122,3 +123,11 @@ Route::get('catalog-category-list', [CatalogCategoryController::class, "dropDown
 
 Route::get('order-items-list', [OrderItemController::class, "dropDown"]);
 Route::get('order-items', [OrderItemController::class, "index"]);
+
+// In routes/web.php
+Route::get('/test-mail', function() {
+    Mail::raw('Test text', function ($message) {
+        $message->to('akildevs1000@gmail.com')->subject('Test');
+    });
+    return 'Check your inbox/logs';
+});

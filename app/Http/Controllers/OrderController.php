@@ -284,7 +284,7 @@ class OrderController extends Controller
             if ($arr["email"]) {
                 $emailPayload = [
                     'recipient' => $customer->email,
-                    'text'      => $arr["email"],
+                    'text'      => $arr["email"], // message body
                     'subject'   => "Order Received",
                 ];
 
