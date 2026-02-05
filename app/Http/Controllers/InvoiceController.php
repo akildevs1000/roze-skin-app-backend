@@ -573,7 +573,7 @@ class InvoiceController extends Controller
 
         if (!empty($messageData['email'])) {
             $emailPayload = [
-                'recipient' => $customer->email = "akildevs1000@gmail.com",
+                'recipient' => $customer->email,
                 'text'      => $messageData['email'], // Message Body
                 'subject'   => "Order Dispatched",
             ];
