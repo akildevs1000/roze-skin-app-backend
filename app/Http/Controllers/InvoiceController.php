@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Invoice\ValidationRequest;
+use App\Jobs\SendEmail;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Order;
+use App\Models\Template;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -268,6 +270,8 @@ class InvoiceController extends Controller
 
         $customer =  $order->customer;
         $isCod = $order->payment_method == 'COD' || $order->payment_method == 'cod';
+
+        $this->dispatchOrderEmail($customer, $order);
 
         $data = [
             "weight" => [
@@ -555,5 +559,28 @@ class InvoiceController extends Controller
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"')
             ->header('Access-Control-Expose-Headers', 'Content-Disposition');
+    }
+
+    public function dispatchOrderEmail($customer, $order): void
+    {
+        $templates = Template::whereActionId(["action_id" => Template::ORDER_DISPATCHED])->orderBy("id", "desc")->get();
+
+        if (! count($templates)) {
+            return;
+        }
+
+        $messageData = (new OrderController)->prepareMessage($templates, $customer, $order);
+
+        if (!empty($messageData['email'])) {
+            $emailPayload = [
+                'recipient' => $customer->email = "akildevs1000@gmail.com",
+                'text'      => $messageData['email'], // Message Body
+                'subject'   => "Order Dispatched",
+            ];
+
+            SendEmail::dispatch($emailPayload);
+
+            Log::channel('order_emx')->info('EMX API Email Dispatch Request', $emailPayload);
+        }
     }
 }
