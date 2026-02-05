@@ -26,7 +26,7 @@ class ValidationRequest extends FormRequest
         return [
             "customer.first_name" => "required|max:255",
             "customer.last_name" => "required|max:255",
-            "customer.email" => "nullable",
+            "customer.email" => "nullable|email",
             "customer.dob" => "nullable",
             "customer.phone" => "required|string",
             "customer.whatsapp" => "nullable|string",
@@ -47,7 +47,7 @@ class ValidationRequest extends FormRequest
             'user_id' => 'nullable|integer',
             'username' => 'nullable|string',
             'email' => 'nullable|email',
-            'order_id' => 'required|integer',
+            'order_id' => 'nullable|integer',
             'order_status' => 'required',
             'currency' => 'required|string',
             'shipping_charges' => 'required|numeric',

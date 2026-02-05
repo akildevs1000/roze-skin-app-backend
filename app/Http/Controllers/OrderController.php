@@ -301,6 +301,64 @@ class OrderController extends Controller
         }
     }
 
+
+    public function WhatsappStore(ValidationRequest $request)
+    {
+        try {
+
+            $validatedData = $request->validated();
+            $customer                     = Customer::storeOrUpdateCustomerWithAddresses($validatedData);
+            $validatedData["customer_id"] = $customer->id ?? 0;
+            $validatedData["order_date"]  = date("Y-m-d H:i:s");
+            $order                        = Order::create($validatedData);
+            $order->order_id = "1000" . $order->id;
+            $order->save();
+            
+            $templates = Template::whereActionId(["action_id" => Template::ORDER_RECEIVED])->orderBy("id", "desc")->get();
+
+            if (! count($templates)) {
+                return $order;
+            }
+
+            $responses = [];
+
+            $arr = $this->prepareMessage($templates, $customer, $order);
+
+            if ($arr["whatsapp"]) {
+                $normalizePhoneNumber = $this->normalizePhoneNumber($customer->whatsapp);
+                if ($normalizePhoneNumber) {
+                    $whatsappPayload = [
+                        'recipient' => $normalizePhoneNumber,
+                        'text'      => $arr["whatsapp"],
+                        'clientId'  => $this->getClient(),
+                    ];
+
+                    WhastappSender::dispatch($whatsappPayload);
+
+                    $responses[] = ["whatsapp" => $whatsappPayload];
+                }
+            }
+
+            if ($arr["email"]) {
+                $emailPayload = [
+                    'recipient' => $customer->email,
+                    'text'      => $arr["email"], // message body
+                    'subject'   => "Order Received",
+                ];
+
+                SendEmail::dispatch($emailPayload);
+
+                $responses[] = ["email" => $emailPayload];
+            }
+
+            Log::channel('orders')->info(json_encode(["request" => $request->all(), "response" => $order], JSON_PRETTY_PRINT));
+
+            return $responses;
+        } catch (\Exception $e) {
+            Log::channel('orders')->info(json_encode(["request" => $request->all(), "response" => $e->getMessage()], JSON_PRETTY_PRINT));
+        }
+    }
+
     public function update(ValidationRequest $request, Order $order)
     {
         $validatedData = $request->validated();

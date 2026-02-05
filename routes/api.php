@@ -85,6 +85,8 @@ Route::get('status-list', [OrderController::class, "getStatusesDropdown"]);
 Route::get('order-qty-by-date', [OrderController::class, "orderQtyByDate"]);
 Route::get('order-sum-by-date', [OrderController::class, "orderSumByDate"]);
 Route::get('orders-stats-by-date', [OrderController::class, "statsByDate"]);
+Route::post('whatsapp-order', [OrderController::class, "WhatsappStore"]);
+
 
 Route::apiResource('invoices', InvoiceController::class);
 Route::get('invoice-list', [InvoiceController::class, "dropDown"]);
