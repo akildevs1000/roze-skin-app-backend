@@ -11,7 +11,7 @@ class MailForDisptach extends Command
      *
      * @var string
      */
-    protected $signature = 'mail:dispatch';
+    protected $signature = 'mail:dispatch {tracking_number}';
 
     /**
      * The console command description.
