@@ -9,7 +9,7 @@ use App\Http\Controllers\InvoiceController;
 class MailForDispatch extends Command
 {
     // Fixed typo from 'disptach' to 'dispatch'
-    protected $signature = 'mail:dispatch {tracking_number : The tracking number of the order}';
+    protected $signature = 'mail:dispatch {tracking_number}';
 
     protected $description = 'Send a dispatch notification email to the customer based on tracking number';
 
