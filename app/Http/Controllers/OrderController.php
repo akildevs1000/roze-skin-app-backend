@@ -448,16 +448,6 @@ class OrderController extends Controller
         $shipping_address = $customer->shipping_address->full_address;
         $tracking_number  = $order->tracking_number;
 
-        // $message = "Dear $full_name\n\n"
-        //     . "Thank you for your order!\n\n"
-        //     . "Order ID: $order_id\n"
-        //     . "Items: $items\n"
-        //     . "Total: AED $total\n"
-        //     . "Shipping Address: $shipping_address\n\n"
-        //     . "We have received your order and it’s currently being processed\n"
-        //     . "We will notify you once it has been shipped.\n\n"
-        //     . "Team RozeSkin";
-
         $whatsapp = null;
         $email    = null;
 

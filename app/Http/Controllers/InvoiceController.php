@@ -271,8 +271,6 @@ class InvoiceController extends Controller
         $customer =  $order->customer;
         $isCod = $order->payment_method == 'COD' || $order->payment_method == 'cod';
 
-        $this->dispatchOrderEmail($customer, $order);
-
         $data = [
             "weight" => [
                 "value" => 250,
@@ -389,6 +387,11 @@ class InvoiceController extends Controller
                 'awb'       => $awb,
                 'labelUrl'  => $labelUrl
             ]);
+
+            if ($awb > 0) {
+                $this->dispatchOrderEmail($customer, $order);
+            }
+
 
             return $this->show($order, $box_dimension);
         } catch (\Exception $e) {
