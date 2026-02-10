@@ -313,7 +313,7 @@ class OrderController extends Controller
             $order                        = Order::create($validatedData);
             $order->order_id = "1000" . $order->id;
             $order->save();
-            
+
             $templates = Template::whereActionId(["action_id" => Template::ORDER_RECEIVED])->orderBy("id", "desc")->get();
 
             if (! count($templates)) {
@@ -527,11 +527,11 @@ class OrderController extends Controller
     {
         $from = $request->query('from_date', date("Y-m-01"));
         $to   = $request->query('to_date', date("Y-m-t"));
+        $dates = [$from, $to];
 
         $query = Order::selectRaw('DATE(created_at) as date, COUNT(*) as total')
             ->whereNot('order_status', Order::CANCELLED)
-            ->whereDate('created_at', '>=', $from)
-            ->whereDate('created_at', '<=', $to)
+            ->whereBetween('order_date', $dates)
             ->groupBy('date')
             ->orderBy('date');
 
@@ -540,49 +540,18 @@ class OrderController extends Controller
 
     public function orderSumByDate(Request $request)
     {
-        $from = $request->query('from_date', date("Y-m-01"));
-        $to   = $request->query('to_date', date("Y-m-t"));
+
+        $from = request('from') ? request('from') . " 00:00:00" : date("Y-m-01 00:00:00");
+        $to   = request('to') ? request('to') . " 23:59:59" : date("Y-m-t 23:59:59");
+        $dates = [$from, $to];
 
         $query = Order::selectRaw('DATE(created_at) as date, SUM(total) as total')
             ->whereNot('order_status', Order::CANCELLED)
-            ->whereDate('created_at', '>=', $from)
-            ->whereDate('created_at', '<=', $to)
+            ->whereBetween('order_date', $dates)
             ->groupBy('date')
             ->orderBy('date');
 
         return $query->get()->toArray();
-    }
-
-    public function orderSumByDate_OLD(Request $request)
-    {
-
-        $from = request('from_date') ?? date('Y-m-d');
-        $to   = request('to_date') ?? date('Y-m-d');
-
-        $orders = Order::with('invoice')
-            ->whereHas('invoice', fn($q) => $q->whereDate('created_at', '>=', $from)
-                ->whereDate('created_at', '<=', $to))
-            ->get()
-            ->groupBy(fn($order) => $order->invoice->created_at->format('Y-m-d'))
-            ->map(fn($orders, $date) => [
-                'date'  => $date,
-                'total' => $orders->sum(fn($o) => $o->total ?? 0),
-            ])
-            ->toArray();
-
-        // Generate all dates in the range
-        $period = CarbonPeriod::create($from, $to);
-
-        $result = [];
-        foreach ($period as $date) {
-            $day      = $date->format('Y-m-d');
-            $result[] = [
-                'date'  => $day,
-                'total' => $orders[$day]['total'] ?? 0, // 0 if no orders on that date
-            ];
-        }
-
-        return $result;
     }
 
     public function statsByDate(Request $request)
