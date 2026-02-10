@@ -528,7 +528,7 @@ class OrderController extends Controller
         $from = $request->query('from_date', date("Y-m-01"));
         $to   = $request->query('to_date', date("Y-m-t"));
 
-        $query = Order::selectRaw('DATE(created_at) as date, COUNT(*) as total')
+        $query = Order::selectRaw('DATE(order_date) as date, COUNT(*) as total')
             ->whereNot('order_status', Order::CANCELLED)
             ->whereDate('created_at', '>=', $from)
             ->whereDate('created_at', '<=', $to)
@@ -543,7 +543,7 @@ class OrderController extends Controller
         $from = $request->query('from_date', date("Y-m-01"));
         $to   = $request->query('to_date', date("Y-m-t"));
 
-        $query = Order::selectRaw('DATE(created_at) as date, SUM(total) as total')
+        $query = Order::selectRaw('DATE(order_date) as date, SUM(total) as total')
             ->whereNot('order_status', Order::CANCELLED)
             ->whereDate('created_at', '>=', $from)
             ->whereDate('created_at', '<=', $to)
