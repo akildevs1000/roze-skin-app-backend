@@ -530,8 +530,8 @@ class OrderController extends Controller
 
         $query = Order::selectRaw('DATE(order_date) as date, COUNT(*) as total')
             ->whereNot('order_status', Order::CANCELLED)
-            ->whereDate('created_at', '>=', $from)
-            ->whereDate('created_at', '<=', $to)
+            ->whereDate('order_date', '>=', $from)
+            ->whereDate('order_date', '<=', $to)
             ->groupBy('date')
             ->orderBy('date');
 
@@ -545,8 +545,8 @@ class OrderController extends Controller
 
         $query = Order::selectRaw('DATE(order_date) as date, SUM(total) as total')
             ->whereNot('order_status', Order::CANCELLED)
-            ->whereDate('created_at', '>=', $from)
-            ->whereDate('created_at', '<=', $to)
+            ->whereDate('order_date', '>=', $from)
+            ->whereDate('order_date', '<=', $to)
             ->groupBy('date')
             ->orderBy('date');
 
