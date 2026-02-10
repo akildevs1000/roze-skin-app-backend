@@ -525,8 +525,8 @@ class OrderController extends Controller
 
     public function orderQtyByDate(Request $request)
     {
-        $from = request('from_date') ? request('from') : date("Y-m-01");
-        $to   = request('to_date') ? request('to') : date("Y-m-t");
+        $from = request('from_date') ?? date("Y-m-01");
+        $to   = request('to_date') ?? date("Y-m-t");
         $dates = [$from, $to];
 
         $query = Order::selectRaw('DATE(order_date) as date, COUNT(*) as total')
@@ -540,9 +540,8 @@ class OrderController extends Controller
 
     public function orderSumByDate(Request $request)
     {
-
-        $from = request('from_date') ? request('from') : date("Y-m-01");
-        $to   = request('to_date') ? request('to') : date("Y-m-t");
+        $from = request('from_date') ?? date("Y-m-01");
+        $to   = request('to_date') ?? date("Y-m-t");
         $dates = [$from, $to];
 
         $query = Order::selectRaw('DATE(order_date) as date, SUM(total) as total')
