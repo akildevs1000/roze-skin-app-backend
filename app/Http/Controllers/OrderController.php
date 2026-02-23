@@ -254,7 +254,9 @@ class OrderController extends Controller
             $customer                     = Customer::storeOrUpdateCustomerWithAddresses($validatedData);
             $validatedData["customer_id"] = $customer->id ?? 0;
             $validatedData["order_date"]  = $order_date;
+            $validatedData["order_status"]  = "processing";
             $order                        = Order::create($validatedData);
+
 
             $templates = Template::whereActionId(["action_id" => Template::ORDER_RECEIVED])->orderBy("id", "desc")->get();
 
@@ -313,7 +315,7 @@ class OrderController extends Controller
             $order                        = Order::create($validatedData);
             $order->order_id = "1000" . $order->id;
             $order->save();
-            
+
             $templates = Template::whereActionId(["action_id" => Template::ORDER_RECEIVED])->orderBy("id", "desc")->get();
 
             if (! count($templates)) {
