@@ -253,6 +253,10 @@ class InvoiceController extends Controller
             return;
         }
 
+        if ($order->delivery_service->name !== "EMX") {
+            return "Delivery service is not EMX, skipping EMX shipment creation for order: $order_id";
+        }
+
         $awb = $order->tracking_number;
 
         if ($awb) {
