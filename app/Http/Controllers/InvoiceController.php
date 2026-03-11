@@ -180,6 +180,7 @@ class InvoiceController extends Controller
                 // 'total' => $validated['total'] ?? 0,
                 // 'discount' => $validated['discount'] ?? 0,
                 'order_status' => "completed",
+                "delivery_service_id" => $request->delivery_service_id,
             ]);
 
 
