@@ -21,7 +21,7 @@ class Customer extends Model
         'whatsapp',
     ];
 
-    protected $appends = ['full_name','customer_with_phone', 'date_time', 'dob_display', 'reference_id'];
+    protected $appends = ['full_name', 'customer_with_phone', 'date_time', 'dob_display', 'reference_id'];
 
     public function getReferenceIdAttribute()
     {
@@ -68,36 +68,37 @@ class Customer extends Model
         return $this->hasMany(Order::class);
     }
 
-    public static function storeOrUpdateCustomerWithAddresses(array $data)
-    {
-        $customer = self::where('phone', $data['customer']['phone'])->first();
+public static function storeOrUpdateCustomerWithAddresses(array $data, ?int $customerId = null)
+{
+    // On update, find by ID. On create, try phone to avoid duplicates.
+    $customer = $customerId
+        ? self::find($customerId)
+        : self::where('phone', $data['customer']['phone'])->first();
 
-        if ($customer) {
-            // Update
-            $customer->first_name = $data['customer']['first_name'];
-            $customer->last_name = $data['customer']['last_name'];
-            $customer->email = $data['customer']['email'] ?? null;
-            $customer->dob = $data['customer']['dob'] ?? date("Y-m-d");
-            $customer->phone = $data['customer']['phone'];
-            $customer->whatsapp = $data['customer']['whatsapp'];
-            $customer->save();
-        } else {
-            // Create
-            $customer = self::create([
-                'first_name' => $data['customer']['first_name'],
-                'last_name' => $data['customer']['last_name'],
-                'email' => $data['customer']['email'] ?? null,
-                'dob' => $data['customer']['dob'] ?? date("Y-m-d"),
-                'phone' => $data['customer']['phone'],
-                'whatsapp' => $data['customer']['whatsapp']
-            ]);
-        }
-
-        self::storeOrUpdateShippingAddress($customer->id, $data['shipping_address']);
-        self::storeOrUpdateBillingAddress($customer->id, $data['billing_address']);
-
-        return $customer;
+    if ($customer) {
+        $customer->first_name = $data['customer']['first_name'];
+        $customer->last_name  = $data['customer']['last_name'];
+        $customer->email      = $data['customer']['email'] ?? null;
+        $customer->dob        = $data['customer']['dob'] ?? date("Y-m-d");
+        $customer->phone      = $data['customer']['phone'];
+        $customer->whatsapp   = $data['customer']['whatsapp'];
+        $customer->save();
+    } else {
+        $customer = self::create([
+            'first_name' => $data['customer']['first_name'],
+            'last_name'  => $data['customer']['last_name'],
+            'email'      => $data['customer']['email'] ?? null,
+            'dob'        => $data['customer']['dob'] ?? date("Y-m-d"),
+            'phone'      => $data['customer']['phone'],
+            'whatsapp'   => $data['customer']['whatsapp'],
+        ]);
     }
+
+    self::storeOrUpdateShippingAddress($customer->id, $data['shipping_address']);
+    self::storeOrUpdateBillingAddress($customer->id, $data['billing_address']);
+
+    return $customer;
+}
 
 
     public static function storeOrUpdateShippingAddress($customerId, array $shippingData)

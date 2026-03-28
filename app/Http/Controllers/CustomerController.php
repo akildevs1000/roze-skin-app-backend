@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Customer\ValidationRequest;
@@ -38,12 +39,12 @@ class CustomerController extends Controller
         return Customer::query()
             ->orderByDesc('id')
 
-        // ✅ Fix: Use id instead of customer_id
+            // ✅ Fix: Use id instead of customer_id
             ->when($customer_id, function ($q) use ($customer_id) {
                 $q->where('id', $customer_id);
             })
 
-        // ✅ Apply filters on orders relation
+            // ✅ Apply filters on orders relation
             ->when($order_status, function ($q) use ($order_status) {
                 $q->whereHas("orders", fn($q) => $q->where('order_status', $order_status));
             })
@@ -57,10 +58,10 @@ class CustomerController extends Controller
                 $q->whereHas("orders", fn($q) => $q->where('payment_method', $payment_method));
             })
 
-        // ✅ Always filter orders by date
+            // ✅ Always filter orders by date
             ->whereHas("orders", fn($q) => $q->whereBetween('order_date', $dates))
 
-        // ✅ Eager load relations
+            // ✅ Eager load relations
             ->with([
                 "orders" => function ($q) use ($dates, $order_status, $business_source_id, $delivery_service_id, $payment_method) {
                     $q->whereBetween('order_date', $dates);
@@ -82,7 +83,7 @@ class CustomerController extends Controller
                 "shipping_address",
             ])
 
-        // ✅ Aggregates
+            // ✅ Aggregates
             ->withCount("orders")
             ->withSum("orders", "total")
 
@@ -112,7 +113,7 @@ class CustomerController extends Controller
 
     public function update(ValidationRequest $request, Customer $customer)
     {
-        $customer = Customer::storeOrUpdateCustomerWithAddresses($request->validated());
+        $customer = Customer::storeOrUpdateCustomerWithAddresses($request->validated(), $customer->id);
         return $customer;
     }
 
@@ -159,25 +160,24 @@ class CustomerController extends Controller
         return Customer::query()
             ->orderByDesc('id')
 
-        // ✅ Fix: Use id instead of customer_id
+            // ✅ Fix: Use id instead of customer_id
             ->when($customer_id, function ($q) use ($customer_id) {
                 $q->where('id', $customer_id);
             })
 
-        // ✅ Always filter orders by date
+            // ✅ Always filter orders by date
             ->whereHas("orders", fn($q) => $q->whereBetween('order_date', $dates))
 
-        // ✅ Eager load relations
+            // ✅ Eager load relations
             ->with([
                 "orders" => function ($q) use ($dates) {
                     $q->whereBetween('order_date', $dates);
-
                 },
                 "billing_address",
                 "shipping_address",
             ])
 
-        // ✅ Aggregates
+            // ✅ Aggregates
             ->withCount("orders")
             ->withSum("orders", "total")
 
@@ -195,18 +195,18 @@ class CustomerController extends Controller
 
         return Customer::query()
 
-        // ✅ Fix: Use id instead of customer_id
+            // ✅ Fix: Use id instead of customer_id
             ->when($customer_id, function ($q) use ($customer_id) {
                 $q->where('id', $customer_id);
             })
 
-        // ✅ Always filter orders by date
+            // ✅ Always filter orders by date
             ->whereHas('orders', function ($q) use ($dates) {
                 $q->whereBetween('order_date', $dates);
                 $q->whereNotIn("order_status", ["cancelled"]);
             }, '>', 1)
 
-        // ✅ Eager load relations
+            // ✅ Eager load relations
             ->with([
                 "orders" => function ($q) use ($dates) {
                     $q->whereBetween('order_date', $dates);
@@ -216,7 +216,7 @@ class CustomerController extends Controller
                 "shipping_address",
             ])
 
-        // ✅ Aggregates
+            // ✅ Aggregates
             ->withCount([
                 'orders as orders_count' => function ($q) use ($customer_id, $dates) {
                     $q->whereBetween('order_date', $dates);
