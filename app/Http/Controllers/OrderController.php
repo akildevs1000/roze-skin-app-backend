@@ -251,15 +251,8 @@ class OrderController extends Controller
                 return response()->json($response, 409);
             }
 
-            // 1. Start with the incoming status (or default to pending)
             $status = $validatedData['order_status'] ?? 'pending';
 
-            // 2. Apply your "Digital Payment" logic: restrict to only these two
-            if (!in_array($status, ['processing', 'pending'])) {
-                $status = 'pending';
-            }
-
-            // 3. The "Master Override": If COD, it is ALWAYS processing
             if (strtolower($validatedData['payment_method'] ?? '') === 'cod') {
                 $status = 'processing';
             }
