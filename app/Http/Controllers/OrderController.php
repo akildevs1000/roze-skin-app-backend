@@ -254,9 +254,8 @@ class OrderController extends Controller
             $customer                     = Customer::storeOrUpdateCustomerWithAddresses($validatedData);
             $validatedData["customer_id"] = $customer->id ?? 0;
             $validatedData["order_date"]  = $order_date;
-            $validatedData["order_status"]  = "processing";
+            $validatedData["order_status"]  = $validatedData["order_status"] === "pending" ? "pending" : "processing";
             $order                        = Order::create($validatedData);
-
 
             $templates = Template::whereActionId(["action_id" => Template::ORDER_RECEIVED])->orderBy("id", "desc")->get();
 
