@@ -251,10 +251,16 @@ class OrderController extends Controller
                 return response()->json($response, 409);
             }
 
+            $status = $validatedData['order_status'] ?? 'pending'; // Fallback if not provided
+
+            if (strtolower($validatedData['payment_method'] ?? '') === 'cod') {
+                $status = 'processing';
+            }
+
             $customer                     = Customer::storeOrUpdateCustomerWithAddresses($validatedData);
             $validatedData["customer_id"] = $customer->id ?? 0;
             $validatedData["order_date"]  = $order_date;
-            $validatedData["order_status"]  = $validatedData["order_status"] === "pending" ? "pending" : "processing";
+            $validatedData["order_status"]  = $status;
             $order                        = Order::create($validatedData);
 
             $templates = Template::whereActionId(["action_id" => Template::ORDER_RECEIVED])->orderBy("id", "desc")->get();
