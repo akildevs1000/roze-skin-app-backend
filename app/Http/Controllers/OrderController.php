@@ -238,29 +238,34 @@ class OrderController extends Controller
 
             $validatedData = $request->validated();
 
+            $paymentMethod = strtolower($validated['payment_method'] ?? '');
+            $orderStatus   = strtolower($validated['order_status'] ?? 'pending');
+            $orderId       = $validated['order_id'] ?? null;
+
+            // ❌ Block invalid pending orders (non-COD)
+            if ($orderStatus === 'pending' && $paymentMethod !== 'cod') {
+                return $this->errorResponse(
+                    'Order cannot be created: pending payment is only allowed for Cash on Delivery (COD).',
+                    $request,
+                    409
+                );
+            }
+
+            // ❌ Prevent duplicate order
+            if ($orderId && Order::where('order_id', $orderId)->exists()) {
+                return $this->errorResponse(
+                    "Order ID {$orderId} already exists.",
+                    $request,
+                    409
+                );
+            }
+
             $order_date = request("order_date", date("Y-m-d H:i:s"));
-
-            if ($validatedData['order_id'] > 0 && Order::where('order_id', $validatedData['order_id'])->exists()) {
-
-                $response = [
-                    'message' => 'Order Id ' . $validatedData['order_id'] . ' already exists.',
-                ];
-
-                Log::channel('orders')->info(json_encode(["request" => $request->all(), "response" => $response], JSON_PRETTY_PRINT));
-
-                return response()->json($response, 409);
-            }
-
-            $status = $validatedData['order_status'] ?? 'pending';
-
-            if (strtolower($validatedData['payment_method'] ?? '') === 'cod') {
-                $status = 'processing';
-            }
 
             $customer                     = Customer::storeOrUpdateCustomerWithAddresses($validatedData);
             $validatedData["customer_id"] = $customer->id ?? 0;
             $validatedData["order_date"]  = $order_date;
-            $validatedData["order_status"]  = $status;
+            $validatedData["order_status"]  = $paymentMethod === 'cod' ? 'processing' : $orderStatus;
             $order                        = Order::create($validatedData);
 
             $templates = Template::whereActionId(["action_id" => Template::ORDER_RECEIVED])->orderBy("id", "desc")->get();
@@ -627,5 +632,17 @@ class OrderController extends Controller
                 'color' => 'green',
             ],
         ];
+    }
+
+    private function errorResponse(string $message = "", $request, int $status = 409)
+    {
+        $response = ['message' => $message];
+
+        Log::channel('orders')->info(json_encode([
+            "request"  => $request->all(),
+            "response" => $response
+        ], JSON_PRETTY_PRINT));
+
+        return response()->json($response, $status);
     }
 }
