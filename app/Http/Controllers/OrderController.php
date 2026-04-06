@@ -260,11 +260,9 @@ class OrderController extends Controller
                 );
             }
 
-            $order_date = request("order_date", date("Y-m-d H:i:s"));
-
             $customer                     = Customer::storeOrUpdateCustomerWithAddresses($validatedData);
             $validatedData["customer_id"] = $customer->id ?? 0;
-            $validatedData["order_date"]  = $order_date;
+            $validatedData["order_date"]  = request("order_date", date("Y-m-d H:i:s"));
             $validatedData["order_status"]  = $paymentMethod === 'cod' ? 'processing' : $orderStatus;
             $order                        = Order::create($validatedData);
 
