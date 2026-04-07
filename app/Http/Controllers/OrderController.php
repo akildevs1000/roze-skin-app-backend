@@ -238,9 +238,9 @@ class OrderController extends Controller
 
             $validatedData = $request->validated();
 
-            $paymentMethod = strtolower($validated['payment_method'] ?? '');
-            $orderStatus   = strtolower($validated['order_status'] ?? 'pending');
-            $orderId       = $validated['order_id'] ?? null;
+            $paymentMethod = strtolower($validatedData['payment_method'] ?? '');
+            $orderStatus   = strtolower($validatedData['order_status'] ?? 'pending');
+            $orderId       = $validatedData['order_id'] ?? null;
 
             // ❌ Block invalid pending orders (non-COD)
             if ($orderStatus === 'pending' && $paymentMethod !== 'cod') {
