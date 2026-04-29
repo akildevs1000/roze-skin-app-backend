@@ -539,7 +539,7 @@ class OrderController extends Controller
         $to   = $request->query('to_date', date("Y-m-t"));
 
         $query = Order::selectRaw('DATE(order_date) as date, COUNT(*) as total')
-            ->whereNot('order_status', Order::CANCELLED)
+            ->where('order_status', Order::COMPLETED)
             ->whereDate('order_date', '>=', $from)
             ->whereDate('order_date', '<=', $to)
             ->groupBy('date')
