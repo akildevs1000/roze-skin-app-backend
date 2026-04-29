@@ -12,6 +12,7 @@ class Order extends Model
 
     const CANCELLED = "cancelled";
     const COMPLETED = "completed";
+    const PROCESSING = "processing";
 
     protected $fillable = [
         "customer_id",
