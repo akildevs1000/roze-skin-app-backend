@@ -562,7 +562,7 @@ class OrderController extends Controller
         $to   = $request->query('to_date', date("Y-m-t"));
 
         $query = Order::selectRaw('DATE(order_date) as date, SUM(total) as total')
-            ->where('order_status', Order::COMPLETED)
+            ->whereIN('order_status', [Order::COMPLETED, Order::PROCESSING])
             ->whereDate('order_date', '>=', $from)
             ->whereDate('order_date', '<=', $to)
             ->groupBy('date')
