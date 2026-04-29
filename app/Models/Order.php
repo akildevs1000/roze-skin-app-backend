@@ -11,6 +11,7 @@ class Order extends Model
     use HasFactory, HasReferenceId;
 
     const CANCELLED = "cancelled";
+    const COMPLETED = "completed";
 
     protected $fillable = [
         "customer_id",
