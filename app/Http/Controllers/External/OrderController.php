@@ -21,10 +21,8 @@ class OrderController extends Controller
         $delivery_service_id = request('delivery_service_id');
         $payment_method      = request('payment_method');
 
-        $from = request('from') ? request('from') . " 00:00:00" : date("Y-m-d 00:00:00");
-        $to   = request('to') ? request('to') . " 23:59:59" : date("Y-m-d 23:59:59");
-
-        $dates = [$from, $to];
+        $from = request('from');
+        $to   = request('to');
 
         $perPage = request('per_page', 15);
 
@@ -48,8 +46,8 @@ class OrderController extends Controller
             ->when($payment_method, function ($q) use ($payment_method) {
                 $q->where('payment_method', $payment_method);
             })
-            ->when(! $search, function ($q) use ($dates) {
-                $q->whereBetween('order_date', $dates);
+            ->when($from && $to, function ($q) use ($from, $to) {
+                $q->whereBetween('order_date', [$from . " 00:00:00", $to . " 23:59:59"]);
             })
             ->with(['business_source', 'delivery_service', 'invoice'])
             ->paginate($perPage);
