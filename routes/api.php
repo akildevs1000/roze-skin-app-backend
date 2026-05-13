@@ -87,6 +87,10 @@ Route::get('order-sum-by-date', [OrderController::class, "orderSumByDate"]);
 Route::get('orders-stats-by-date', [OrderController::class, "statsByDate"]);
 Route::post('whatsapp-order', [OrderController::class, "WhatsappStore"]);
 
+Route::middleware('auth:sanctum')->prefix('external')->group(function () {
+    Route::get('orders', [\App\Http\Controllers\External\OrderController::class, 'index']);
+});
+
 
 Route::apiResource('invoices', InvoiceController::class);
 Route::get('invoice-list', [InvoiceController::class, "dropDown"]);
