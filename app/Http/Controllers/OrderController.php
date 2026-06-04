@@ -242,7 +242,9 @@ class OrderController extends Controller
             $orderStatus   = strtolower($validatedData['order_status'] ?? 'failed');
             $orderId       = $validatedData['order_id'] ?? null;
 
-            if ($orderStatus === 'failed') {
+            // ❌ Block failed orders — but COD never pays online, so a "failed"
+            // status from the website is not a real payment failure for COD.
+            if ($orderStatus === 'failed' && $paymentMethod !== 'cod') {
                 return $this->errorResponse(
                     'Order cannot be created: failed status',
                     $request,
@@ -268,11 +270,20 @@ class OrderController extends Controller
                 );
             }
 
-            $customer                     = Customer::storeOrUpdateCustomerWithAddresses($validatedData);
+            // Orders keep their own address and must not overwrite the customer's saved one.
+            $customer                     = Customer::storeOrUpdateCustomerWithAddresses($validatedData, null, false);
             $validatedData["customer_id"] = $customer->id ?? 0;
             $validatedData["order_date"]  = request("order_date", date("Y-m-d H:i:s"));
             $validatedData["order_status"]  = $paymentMethod === 'cod' ? 'processing' : $orderStatus;
             $order                        = Order::create($validatedData);
+
+            // Freeze this order's own copy of the address (keeps history per order).
+            Customer::storeOrderAddresses(
+                $customer->id,
+                $order->id,
+                $validatedData['shipping_address'] ?? [],
+                $validatedData['billing_address'] ?? []
+            );
 
             $templates = Template::whereActionId(["action_id" => Template::ORDER_RECEIVED])->orderBy("id", "desc")->get();
 
@@ -325,12 +336,21 @@ class OrderController extends Controller
         try {
 
             $validatedData = $request->validated();
-            $customer                     = Customer::storeOrUpdateCustomerWithAddresses($validatedData);
+            // Orders keep their own address and must not overwrite the customer's saved one.
+            $customer                     = Customer::storeOrUpdateCustomerWithAddresses($validatedData, null, false);
             $validatedData["customer_id"] = $customer->id ?? 0;
             $validatedData["order_date"]  = date("Y-m-d H:i:s");
             $order                        = Order::create($validatedData);
             $order->order_id = "1000" . $order->id;
             $order->save();
+
+            // Freeze this order's own copy of the address (keeps history per order).
+            Customer::storeOrderAddresses(
+                $customer->id,
+                $order->id,
+                $validatedData['shipping_address'] ?? [],
+                $validatedData['billing_address'] ?? []
+            );
 
             $templates = Template::whereActionId(["action_id" => Template::ORDER_RECEIVED])->orderBy("id", "desc")->get();
 
@@ -380,8 +400,12 @@ class OrderController extends Controller
     public function update(ValidationRequest $request, Order $order)
     {
         $validatedData = $request->validated();
-        Customer::storeOrUpdateCustomerWithAddresses($validatedData);
-        $order = $order->update($validatedData);
+        // Orders keep their own address and must not overwrite the customer's saved one.
+        Customer::storeOrUpdateCustomerWithAddresses($validatedData, null, false);
+        $order->update($validatedData);
+
+        // The order's address is frozen at creation — editing never changes it.
+
         return $order;
     }
 
@@ -463,7 +487,8 @@ class OrderController extends Controller
         $order_id         = $order->order_id > 0 ? $order->order_id : $order->id;
         $items            = collect($order->items)->pluck('item')->implode(', ');
         $total            = $order->total;
-        $shipping_address = $customer->shipping_address->full_address;
+        // Prefer the address frozen onto this order; fall back to the customer's current one.
+        $shipping_address = optional($order->shippingAddress ?? $customer->shipping_address)->full_address;
         $tracking_number  = $order->tracking_number;
 
         $whatsapp = null;
