@@ -38,23 +38,28 @@ class ReportController extends Controller
             foreach ($products as $product) {
                 $totalQuantity = 0;
                 $totalPrice    = 0;
+                $basePrices    = []; // unit rate => quantity sold at that rate
 
                 foreach ($ordersForDate as $order) {
                     foreach ($order->items as $item) {
                         if ($item['item'] === $product->description) {
                             $totalQuantity += $item['quantity'];
                             $totalPrice += $item['total'];
-                        } else {
-                            info($item['item']);
+
+                            $rateKey = number_format((float) $item['rate'], 2, '.', '');
+                            $basePrices[$rateKey] = ($basePrices[$rateKey] ?? 0) + $item['quantity'];
                         }
                     }
                 }
 
+                ksort($basePrices, SORT_NUMERIC);
+
                 $data[date("d M", strtotime($date))][$product->item_number ?? "---"] = [
-                    'item_code' => $product->item_number ?? "---",
-                    'product'   => $product->item_number ?? "---",
-                    'price'     => number_format($totalPrice ?? 0, 2),
-                    'quantity'  => $totalQuantity ?? 0,
+                    'item_code'   => $product->item_number ?? "---",
+                    'product'     => $product->item_number ?? "---",
+                    'price'       => number_format($totalPrice ?? 0, 2),
+                    'quantity'    => $totalQuantity ?? 0,
+                    'base_prices' => (object) $basePrices,
                 ];
             }
         }
