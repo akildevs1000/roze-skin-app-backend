@@ -109,14 +109,6 @@ class MenuController extends Controller
                 'menu'    => 'accounts_access',
             ],
             [
-                'topMenu' => 'accounts',
-                'icon'    => 'mdi-cart',
-                'module'  => 'accounts',
-                'title'   => 'Stock',
-                'to'      => '/sku',
-                'menu'    => 'accounts_access',
-            ],
-            [
                 'topMenu' => 'settings',
                 'icon'    => 'mdi-cog-outline',
                 'module'  => 'setting',

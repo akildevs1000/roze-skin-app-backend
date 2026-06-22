@@ -17,7 +17,6 @@ use App\Http\Controllers\PaymentModeController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReportController;
-use App\Http\Controllers\StockEntryController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WhatsappClientController;
 use Illuminate\Support\Facades\Log;
@@ -50,8 +49,6 @@ Route::post('products-update', [ProductController::class, "updateProduct"]);
 Route::apiResource('inventory-items', InventoryItemController::class);
 Route::get('inventory-items-list', [InventoryItemController::class, "dropDown"]);
 Route::post('inventory-items-update', [InventoryItemController::class, "updateProduct"]);
-
-Route::apiResource('sku', StockEntryController::class);
 
 Route::apiResource('business-sources', BusinessSourceController::class);
 Route::get('business-source-list', [BusinessSourceController::class, "dropDown"]);

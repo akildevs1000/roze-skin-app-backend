@@ -27,11 +27,6 @@ class InventoryItem extends Model
         return date("d-M-y h:i:sa", strtotime($this->created_at));
     }
 
-    public function stockEntries()
-    {
-        return $this->hasMany(StockEntry::class);
-    }
-
     public function order_items()
     {
         return $this->hasMany(OrderItem::class);
