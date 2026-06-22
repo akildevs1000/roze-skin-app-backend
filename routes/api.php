@@ -7,7 +7,6 @@ use App\Http\Controllers\BusinessSourceController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DeliveryServiceController;
-use App\Http\Controllers\InventoryItemController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\OrderController;
@@ -45,10 +44,6 @@ Route::post('/check_otp/{otp}', [AuthController::class, 'checkOTP']);
 Route::apiResource('products', ProductController::class);
 Route::get('product-list', [ProductController::class, "dropDown"]);
 Route::post('products-update', [ProductController::class, "updateProduct"]);
-
-Route::apiResource('inventory-items', InventoryItemController::class);
-Route::get('inventory-items-list', [InventoryItemController::class, "dropDown"]);
-Route::post('inventory-items-update', [InventoryItemController::class, "updateProduct"]);
 
 Route::apiResource('business-sources', BusinessSourceController::class);
 Route::get('business-source-list', [BusinessSourceController::class, "dropDown"]);

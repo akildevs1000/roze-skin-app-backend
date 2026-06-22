@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
-use App\Models\ProductMapping;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
@@ -24,7 +23,7 @@ class ProductController extends Controller
      */
     public function index()
     {
-        return Product::with(["product_category", "mappings"])->where("name", "LIKE", "%" . request("search", null) . "%")
+        return Product::with(["product_category"])->where("name", "LIKE", "%" . request("search", null) . "%")
             ->orderByDesc("id")
             ->paginate(1000);
     }
@@ -34,8 +33,6 @@ class ProductController extends Controller
         $tracerId = 'Store TRC-' . bin2hex(random_bytes(8));
 
         info("Process Start with $tracerId");
-
-        $ids = json_decode($request->inventory_item_ids ?? json_encode([]), true);
 
         $validated = $request->validate([
             "name"                => "required|min:5|max:255",
@@ -59,25 +56,7 @@ class ProductController extends Controller
 
         $product = Product::create($validated);
 
-        $mappings = [];
-
-        foreach ($ids as $id) {
-
-            $mappings[] = [
-                "product_id"        => $product->id,
-                "inventory_item_id" => $id,
-            ];
-        }
-
-        if (count($ids)) {
-            info(json_encode($mappings, JSON_PRETTY_PRINT));
-
-            ProductMapping::insert($mappings);
-
-            info("Mapping inserted for product {$product->id}");
-
-            info("Store Process End with $tracerId");
-        }
+        info("Store Process End with $tracerId");
 
         return $product;
     }
@@ -87,8 +66,6 @@ class ProductController extends Controller
         $tracerId = 'Update TRC-' . bin2hex(random_bytes(8));
 
         info("Process Start with $tracerId");
-
-        $ids = json_decode($request->inventory_item_ids ?? json_encode([]), true);
 
         $validated = $request->validate([
             "name"                => "required|min:5|max:255",
@@ -118,29 +95,7 @@ class ProductController extends Controller
 
         $product->update($validated);
 
-        $mappings = [];
-
-        foreach ($ids as $id) {
-
-            $mappings[] = [
-                "product_id"        => $product->id,
-                "inventory_item_id" => $id,
-            ];
-        }
-
-        if (count($ids)) {
-            ProductMapping::where("product_id", $product->id)->delete();
-            info("Delete existing mapping for product {$product->id}");
-            info("Request id: " . $request->item_number);
-
-            info("New mapping inserted for product {$product->id}");
-
-            ProductMapping::insert($mappings);
-
-            info(json_encode($mappings, JSON_PRETTY_PRINT));
-
-            info("Update Process End with $tracerId");
-        }
+        info("Update Process End with $tracerId");
 
         return $product->fresh();
     }
