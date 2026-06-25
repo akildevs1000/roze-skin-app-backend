@@ -278,12 +278,12 @@ class OrderController extends Controller
             $order                        = Order::create($validatedData);
 
             // Freeze this order's own copy of the address (keeps history per order).
-            Customer::storeOrderAddresses(
-                $customer->id,
-                $order->id,
-                $validatedData['shipping_address'] ?? [],
-                $validatedData['billing_address'] ?? []
-            );
+            // Customer::storeOrderAddresses(
+            //     $customer->id,
+            //     $order->id,
+            //     $validatedData['shipping_address'] ?? [],
+            //     $validatedData['billing_address'] ?? []
+            // );
 
             $templates = Template::whereActionId(["action_id" => Template::ORDER_RECEIVED])->orderBy("id", "desc")->get();
 
