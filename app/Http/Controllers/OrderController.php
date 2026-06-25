@@ -452,6 +452,16 @@ class OrderController extends Controller
                 "cancel_reason" => $cancelReason,
             ]);
 
+            // Return any stock that was deducted when this order became an invoice.
+            try {
+                $invoiceToReverse = $invoice ?? $order->invoice;
+                if ($invoiceToReverse) {
+                    app(\App\Services\StockSyncService::class)->reverseForInvoice($invoiceToReverse);
+                }
+            } catch (\Throwable $e) {
+                $this->recordLog("Stock reversal failed: " . $e->getMessage());
+            }
+
             $this->recordLog("Order cancelled successfully.");
 
             return response()->json([

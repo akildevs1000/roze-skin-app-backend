@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Template;
+use App\Services\StockSyncService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -183,6 +184,16 @@ class InvoiceController extends Controller
                 "delivery_service_id" => $request->delivery_service_id,
             ]);
 
+            // Sync inventory: decrement stock for each mapped order line.
+            // Never let a stock/mapping issue block the conversion itself.
+            try {
+                $sync = app(StockSyncService::class)->deductForInvoice($invoice);
+                if (! empty($sync['unmapped'])) {
+                    Log::warning("Invoice #{$invoice->id}: order lines with no inventory mapping", $sync['unmapped']);
+                }
+            } catch (\Throwable $e) {
+                Log::error("Invoice #{$invoice->id}: stock deduction failed - " . $e->getMessage());
+            }
 
             DB::commit();
 

@@ -122,6 +122,51 @@ Route::get('catalog-category-list', [CatalogCategoryController::class, "dropDown
 Route::get('order-items-list', [OrderItemController::class, "dropDown"]);
 Route::get('order-items', [OrderItemController::class, "index"]);
 
+/*
+|--------------------------------------------------------------------------
+| Inventory / Stock management
+|--------------------------------------------------------------------------
+*/
+
+// Vendors (suppliers) — managed separately, linked to purchasing
+Route::apiResource('vendors', \App\Http\Controllers\Inventory\VendorController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
+Route::get('vendor-list', [\App\Http\Controllers\Inventory\VendorController::class, "dropDown"]);
+
+// Purchase Orders (creating a PO never changes stock)
+Route::apiResource('purchase-orders', \App\Http\Controllers\Inventory\PurchaseOrderController::class);
+Route::get('purchase-order-list', [\App\Http\Controllers\Inventory\PurchaseOrderController::class, "dropDown"]);
+Route::get('purchase-orders-next-number', [\App\Http\Controllers\Inventory\PurchaseOrderController::class, "nextNumber"]);
+Route::post('purchase-orders/{purchaseOrder}/cancel', [\App\Http\Controllers\Inventory\PurchaseOrderController::class, "cancel"]);
+Route::post('purchase-orders/{purchaseOrder}/attachments', [\App\Http\Controllers\Inventory\PurchaseOrderController::class, "storeAttachments"]);
+Route::delete('purchase-order-attachments/{attachment}', [\App\Http\Controllers\Inventory\PurchaseOrderController::class, "destroyAttachment"]);
+Route::get('purchase-order-report', [\App\Http\Controllers\Inventory\PurchaseOrderController::class, "report"]);
+
+// Warehouses — PO delivery destination (Deliver To)
+Route::apiResource('warehouses', \App\Http\Controllers\Inventory\WarehouseController::class)->only(['index', 'store', 'update', 'destroy']);
+Route::get('warehouse-list', [\App\Http\Controllers\Inventory\WarehouseController::class, "dropDown"]);
+
+// Goods Receiving (GRN) — stock increases here, partial receiving supported
+Route::apiResource('goods-receipts', \App\Http\Controllers\Inventory\GoodsReceiptController::class)->only(['index', 'show', 'store']);
+
+// Inventory item catalog (master items)
+Route::get('inventory-items/{inventoryItem}/history', [\App\Http\Controllers\Inventory\InventoryItemController::class, "history"]);
+Route::apiResource('inventory-items', \App\Http\Controllers\Inventory\InventoryItemController::class)->only(['index', 'store', 'update', 'destroy']);
+
+// Inventory list / low stock / reorder level
+Route::get('inventory', [\App\Http\Controllers\Inventory\InventoryController::class, "index"]);
+Route::get('inventory-list', [\App\Http\Controllers\Inventory\InventoryController::class, "dropDown"]);
+Route::get('inventory-low-stock', [\App\Http\Controllers\Inventory\InventoryController::class, "lowStock"]);
+Route::post('inventory-reorder-level', [\App\Http\Controllers\Inventory\InventoryController::class, "setReorderLevel"]);
+
+// Inventory dashboard
+Route::get('inventory-dashboard', [\App\Http\Controllers\Inventory\InventoryDashboardController::class, "index"]);
+Route::get('inventory-dashboard-recent', [\App\Http\Controllers\Inventory\InventoryDashboardController::class, "recentMovements"]);
+
+// WordPress product -> inventory item mapping (drives stock sync on convert-to-invoice)
+Route::get('wp-product-map-products', [\App\Http\Controllers\Inventory\WpProductMapController::class, "products"]);
+Route::post('wp-product-map', [\App\Http\Controllers\Inventory\WpProductMapController::class, "store"]);
+Route::delete('wp-product-map/{id}', [\App\Http\Controllers\Inventory\WpProductMapController::class, "destroy"]);
+
 // In routes/web.php
 Route::get('/test-mail', function() {
     Mail::raw('Test text', function ($message) {

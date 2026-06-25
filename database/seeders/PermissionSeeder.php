@@ -128,6 +128,15 @@ class PermissionSeeder extends Seeder
         Permission::create(['module' => 'invoices', 'title' => 'Edit', 'name' => 'invoices_edit']);
         Permission::create(['module' => 'invoices', 'title' => 'Delete', 'name' => 'invoices_delete']);
 
+        // Inventory / Stock management
+        Permission::create(['module' => 'inventory', 'title' => 'Access', 'name' => 'inventory_access']);
+        Permission::create(['module' => 'inventory', 'title' => 'View', 'name' => 'inventory_view']);
+        Permission::create(['module' => 'inventory', 'title' => 'Create', 'name' => 'inventory_create']);
+        Permission::create(['module' => 'inventory', 'title' => 'Edit', 'name' => 'inventory_edit']);
+        Permission::create(['module' => 'inventory', 'title' => 'Delete', 'name' => 'inventory_delete']);
+        // Special: allow pushing stock below zero (admins only)
+        Permission::create(['module' => 'inventory', 'title' => 'Allow Negative Stock', 'name' => 'inventory_allow_negative_stock']);
+
         Permission::create(['module' => 'analytics', 'title' => 'Access', 'name' => 'analytics_access']);
         Permission::create(['module' => 'analytics', 'title' => 'View', 'name' => 'analytics_view']);
         Permission::create(['module' => 'analytics', 'title' => 'Create', 'name' => 'analytics_create']);
