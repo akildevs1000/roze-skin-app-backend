@@ -105,7 +105,7 @@
                 <td>{{ $index + 1  }}</td>
                 <td class="text-center">{{ $item['tracking_number'] }}</td>
                 <td class="text-center">{{ $item['order_id'] }}</td>
-                <td>{{ $item['customer']['shipping_address']['city'] }}</td>
+                <td>{{ $item['shipping_address']['city'] ?? $item['customer']['shipping_address']['city'] ?? '' }}</td>
                 <td>{{ $item['customer']['full_name'] }}</td>
                 <td class="text-right">{{ $item['payment_method'] }}</td>
                 <td style="text-align: right !important;"><img src="{{ public_path('AED.svg') }}" style="width: 10px;"> {{ number_format($item['total'], 2) }}</td>

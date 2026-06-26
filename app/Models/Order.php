@@ -46,6 +46,8 @@ class Order extends Model
     protected $with = [
         'customer.shipping_address',
         'customer.billing_address',
+        'shippingAddress',
+        'billingAddress',
     ];
 
     protected $casts = [
@@ -101,6 +103,21 @@ class Order extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    /**
+     * The shipping/billing address frozen onto this order at save time.
+     * For orders created before this feature it is null; read sites fall
+     * back to the customer's current address.
+     */
+    public function shippingAddress()
+    {
+        return $this->hasOne(ShippingAddress::class, 'order_id');
+    }
+
+    public function billingAddress()
+    {
+        return $this->hasOne(BillingAddress::class, 'order_id');
     }
 
     public function business_source()

@@ -285,6 +285,8 @@ class InvoiceController extends Controller
         // }
 
         $customer =  $order->customer;
+        // Address frozen onto this order; fall back to the customer's current one.
+        $shipTo = $order->shippingAddress ?? optional($customer)->shipping_address;
         $isCod = $order->payment_method == 'COD' || $order->payment_method == 'cod';
 
         $data = [
@@ -318,8 +320,8 @@ class InvoiceController extends Controller
                     "companyName" => $customer->full_name,
                 ],
                 "address" => [
-                    "line1" => $customer?->shipping_address?->address_1 ?? "No Address given",
-                    "city" => $customer?->shipping_address?->city ?? "No City given",
+                    "line1" => $shipTo?->address_1 ?? "No Address given",
+                    "city" => $shipTo?->city ?? "No City given",
                     "countryCode" => "AE",
                     "zipCode" => "00000",
                 ],
@@ -525,6 +527,8 @@ class InvoiceController extends Controller
         $awb = $order->tracking_number;
 
         $customer =  $order->customer;
+        // Address frozen onto this order; fall back to the customer's current one.
+        $shipTo = $order->shippingAddress ?? optional($customer)->shipping_address;
 
         $isCod = $order->payment_method == 'COD' || $order->payment_method == 'cod';
 
@@ -547,8 +551,8 @@ class InvoiceController extends Controller
             // Receiver Info
             'receiver_name' => $customer->full_name,
             'receiver_country' => 'AE',
-            'receiver_city' => $customer?->shipping_address?->city ?? 'Dubai',
-            'receiver_address' =>  $customer?->shipping_address?->address_1 ?? "No Address given",
+            'receiver_city' => $shipTo?->city ?? 'Dubai',
+            'receiver_address' =>  $shipTo?->address_1 ?? "No Address given",
             'receiver_phone' => $customer->whatsapp . " " . $customer->phone,
 
             // Content Details

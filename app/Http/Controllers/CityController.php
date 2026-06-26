@@ -38,7 +38,12 @@ class CityController extends Controller
                 }
             })
             ->join('customers', 'orders.customer_id', '=', 'customers.id')
-            ->join('shipping_addresses', 'customers.id', '=', 'shipping_addresses.customer_id')
+            // Only the customer's current address row (order_id IS NULL); per-order
+            // snapshots would otherwise multiply the order counts.
+            ->join('shipping_addresses', function ($join) {
+                $join->on('customers.id', '=', 'shipping_addresses.customer_id')
+                    ->whereNull('shipping_addresses.order_id');
+            })
             ->when($city && $city !== "Select All", function ($q) use ($city) {
                 $q->where('shipping_addresses.city', $city);
             })

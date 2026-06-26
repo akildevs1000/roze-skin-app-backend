@@ -81,6 +81,8 @@ class CustomerController extends Controller
                 },
                 "billing_address",
                 "shipping_address",
+                "shipping_addresses",
+                "billing_addresses",
             ])
 
             // ✅ Aggregates
@@ -132,7 +134,12 @@ class CustomerController extends Controller
 
     public function getCustomer()
     {
-        $model = Customer::with("shipping_address", "billing_address")->where("phone", request("phone") ?? null)->first() ?? null;
+        $model = Customer::with([
+            "shipping_address",
+            "billing_address",
+            "shipping_addresses",
+            "billing_addresses",
+        ])->where("phone", request("phone") ?? null)->first() ?? null;
 
         return [
             "customer"         => [
@@ -145,7 +152,20 @@ class CustomerController extends Controller
             ],
             "shipping_address" => $model->shipping_address ?? null,
             "billing_address"  => $model->billing_address ?? null,
+            // Full address book for the order form picker (every saved address).
+            "shipping_addresses" => self::nonEmptyAddresses($model->shipping_addresses ?? collect()),
+            "billing_addresses"  => self::nonEmptyAddresses($model->billing_addresses ?? collect()),
         ];
+    }
+
+    /**
+     * Every saved address (most recent first), dropping only blank rows.
+     */
+    private static function nonEmptyAddresses($addresses)
+    {
+        return collect($addresses)
+            ->filter(fn($a) => trim((string) $a->full_address) !== '')
+            ->values();
     }
 
     public function report()
