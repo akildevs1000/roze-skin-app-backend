@@ -5,6 +5,10 @@ namespace App\Http\Controllers\Inventory;
 use App\Http\Controllers\Controller;
 use App\Models\InventoryItem;
 use App\Models\InventoryStock;
+use App\Models\Setting;
+use App\Models\StockLedger;
+use App\Services\StockService;
+use App\Services\StockSyncService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -70,6 +74,78 @@ class InventoryController extends Controller
         $stock->update(['reorder_level' => $data['reorder_level']]);
 
         return $stock;
+    }
+
+    /**
+     * Set opening / initial stock directly, without a purchase order. For each
+     * item the given quantity becomes the absolute sellable balance: the
+     * difference from the current balance is posted as an adjustment so the
+     * ledger stays the single source of truth. Intended as a one-time setup tool.
+     */
+    public function openingStock(Request $request, StockService $stock)
+    {
+        $data = $request->validate([
+            'items'              => 'required|array|min:1',
+            'items.*.product_id' => 'required|integer|exists:inventory_items,id',
+            'items.*.quantity'   => 'required|integer|min:0',
+        ]);
+
+        $updated = 0;
+
+        DB::transaction(function () use ($data, $stock, &$updated) {
+            foreach ($data['items'] as $row) {
+                $productId = (int) $row['product_id'];
+                $target    = (int) $row['quantity'];
+
+                $current = (int) optional(
+                    InventoryStock::where('product_id', $productId)->first()
+                )->sellable_qty;
+
+                $delta = $target - $current;
+
+                if ($delta === 0) {
+                    continue;
+                }
+
+                $stock->move(
+                    $productId,
+                    $delta,
+                    $delta > 0 ? StockLedger::ADJUSTMENT_INCREASE : StockLedger::ADJUSTMENT_DECREASE,
+                    StockLedger::BUCKET_SELLABLE,
+                    [
+                        'reference'      => 'OPENING',
+                        'reason'         => 'Opening stock',
+                        'allow_negative' => true,
+                    ]
+                );
+
+                $updated++;
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => "Opening stock saved for {$updated} item(s).",
+            'updated' => $updated,
+        ]);
+    }
+
+    /** Read the master stock-linking switch. */
+    public function stockSyncStatus()
+    {
+        return [
+            'enabled' => (bool) ((int) Setting::get(StockSyncService::STOCK_SYNC_SETTING, '0')),
+        ];
+    }
+
+    /** Turn the master stock-linking switch on/off. */
+    public function setStockSync(Request $request)
+    {
+        $data = $request->validate(['enabled' => 'required|boolean']);
+
+        Setting::put(StockSyncService::STOCK_SYNC_SETTING, $data['enabled'] ? '1' : '0');
+
+        return ['enabled' => (bool) $data['enabled']];
     }
 
     private function baseQuery(Request $request)

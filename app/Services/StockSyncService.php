@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Invoice;
+use App\Models\Setting;
 use App\Models\StockLedger;
 use App\Models\WpProductMap;
 
@@ -18,8 +19,21 @@ class StockSyncService
 {
     const SOURCE_TYPE = 'sales_invoice';
 
+    /** Settings key for the master on/off switch for inventory stock linking. */
+    const STOCK_SYNC_SETTING = 'inventory_stock_sync_enabled';
+
     public function __construct(private StockService $stock)
     {
+    }
+
+    /**
+     * Master switch. When disabled (the default), invoices/cancels/returns never
+     * touch stock — so a fresh deployment is stock-neutral until it is turned on
+     * from the Opening Stock screen.
+     */
+    public function enabled(): bool
+    {
+        return (bool) ((int) Setting::get(self::STOCK_SYNC_SETTING, '0'));
     }
 
     /**
@@ -33,10 +47,14 @@ class StockSyncService
      */
     public function deductForInvoice(Invoice $invoice): array
     {
+        $result = ['deducted' => 0, 'unmapped' => []];
+
+        if (! $this->enabled()) {
+            return $result;
+        }
+
         $order = $invoice->order;
         $items = $order ? (array) $order->items : [];
-
-        $result = ['deducted' => 0, 'unmapped' => []];
 
         if (! $items || $this->alreadyDeducted($invoice)) {
             return $result;
@@ -89,7 +107,7 @@ class StockSyncService
                     [
                         'source_type'    => self::SOURCE_TYPE,
                         'source_id'      => $invoice->id,
-                        'reference'      => $order->reference_id ?? null,
+                        'reference'      => $invoice->reference_id ?? null,
                         'customer_name'  => optional($order->customer)->full_name,
                         // The sale already happened in the real world; never block
                         // invoicing because our on-hand count is behind.
@@ -110,7 +128,35 @@ class StockSyncService
      */
     public function reverseForInvoice(Invoice $invoice): int
     {
-        if (! $this->alreadyDeducted($invoice) || $this->alreadyReversed($invoice)) {
+        return $this->restock($invoice, StockLedger::SALES_INVOICE_CANCEL);
+    }
+
+    /**
+     * Add stock back for an invoice whose order is being RETURNED. The units go
+     * back into the sellable bucket so they're immediately available again.
+     * Idempotent and mutually exclusive with reverseForInvoice (stock can never
+     * be added back twice for the same invoice).
+     *
+     * @return int number of return movements written
+     */
+    public function returnForInvoice(Invoice $invoice, ?string $reason = null): int
+    {
+        return $this->restock($invoice, StockLedger::CUSTOMER_RETURN, $reason);
+    }
+
+    /**
+     * Shared restock routine for cancel/return: re-adds every SALE movement of
+     * the invoice under the given movement type. No-op unless the invoice was
+     * actually deducted and has not already been restored by a prior
+     * cancel/return.
+     */
+    private function restock(Invoice $invoice, string $movementType, ?string $reason = null): int
+    {
+        if (! $this->enabled()) {
+            return 0;
+        }
+
+        if (! $this->alreadyDeducted($invoice) || $this->alreadyRestored($invoice)) {
             return 0;
         }
 
@@ -124,12 +170,13 @@ class StockSyncService
             $this->stock->increase(
                 $sale->product_id,
                 abs((int) $sale->quantity),
-                StockLedger::SALES_INVOICE_CANCEL,
-                $sale->bucket,
+                $movementType,
+                StockLedger::BUCKET_SELLABLE,
                 [
                     'source_type'    => self::SOURCE_TYPE,
                     'source_id'      => $invoice->id,
                     'reference'      => $sale->reference,
+                    'reason'         => $reason,
                     'allow_negative' => true,
                 ]
             );
@@ -147,11 +194,15 @@ class StockSyncService
             ->exists();
     }
 
-    private function alreadyReversed(Invoice $invoice): bool
+    /** True once stock has been added back by either a cancel or a return. */
+    private function alreadyRestored(Invoice $invoice): bool
     {
         return StockLedger::where('source_type', self::SOURCE_TYPE)
             ->where('source_id', $invoice->id)
-            ->where('movement_type', StockLedger::SALES_INVOICE_CANCEL)
+            ->whereIn('movement_type', [
+                StockLedger::SALES_INVOICE_CANCEL,
+                StockLedger::CUSTOMER_RETURN,
+            ])
             ->exists();
     }
 }

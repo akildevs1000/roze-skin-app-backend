@@ -39,6 +39,8 @@ class Order extends Model
         "special_instructions",
 
         "cancel_reason",
+
+        "return_reason",
     ];
 
     protected $with = [

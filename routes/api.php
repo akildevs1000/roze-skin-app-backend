@@ -73,6 +73,7 @@ Route::get('order-list', [OrderController::class, "dropDown"]);
 Route::get('lattest-order', [OrderController::class, "latestOrder"]);
 Route::post('order-creater-acknowledge', [OrderController::class, "orderCreateAcknowledge"]);
 Route::post('cancel-order', [OrderController::class, "cancelOrder"]);
+Route::post('return-order', [OrderController::class, "returnOrder"]);
 Route::get('status-list', [OrderController::class, "getStatusesDropdown"]);
 Route::get('order-qty-by-date', [OrderController::class, "orderQtyByDate"]);
 Route::get('order-sum-by-date', [OrderController::class, "orderSumByDate"]);
@@ -157,6 +158,9 @@ Route::get('inventory', [\App\Http\Controllers\Inventory\InventoryController::cl
 Route::get('inventory-list', [\App\Http\Controllers\Inventory\InventoryController::class, "dropDown"]);
 Route::get('inventory-low-stock', [\App\Http\Controllers\Inventory\InventoryController::class, "lowStock"]);
 Route::post('inventory-reorder-level', [\App\Http\Controllers\Inventory\InventoryController::class, "setReorderLevel"]);
+Route::post('inventory-opening-stock', [\App\Http\Controllers\Inventory\InventoryController::class, "openingStock"]);
+Route::get('inventory-stock-sync', [\App\Http\Controllers\Inventory\InventoryController::class, "stockSyncStatus"]);
+Route::post('inventory-stock-sync', [\App\Http\Controllers\Inventory\InventoryController::class, "setStockSync"]);
 
 // Inventory dashboard
 Route::get('inventory-dashboard', [\App\Http\Controllers\Inventory\InventoryDashboardController::class, "index"]);

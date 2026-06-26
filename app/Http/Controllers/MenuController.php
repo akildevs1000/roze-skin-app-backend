@@ -153,6 +153,14 @@ class MenuController extends Controller
                 'menu'    => 'inventory_access',
             ],
             [
+                'topMenu' => 'inventory',
+                'icon'    => 'mdi-database-plus-outline',
+                'module'  => 'inventory',
+                'title'   => 'Opening Stock',
+                'to'      => '/inventory/opening-stock',
+                'menu'    => 'inventory_access',
+            ],
+            [
                 'topMenu' => 'accounts',
                 'icon'    => 'mdi-file-document-outline',
                 'module'  => 'accounts',

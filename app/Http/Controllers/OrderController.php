@@ -480,6 +480,77 @@ class OrderController extends Controller
         }
     }
 
+    public function returnOrder()
+    {
+        try {
+            $orderId      = request("order_id");
+            $invoice_id   = request("invoice_id");
+            $returnReason = request("return_reason");
+
+            $this->recordLog("Return order request received.");
+
+            $order = Order::where("order_id", $orderId)->first();
+
+            if (! $order) {
+                $this->recordLog("Order not found.");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found.',
+                ], 404);
+            }
+
+            $invoice = null;
+            if ($invoice_id) {
+                $invoice = Invoice::where("id", $invoice_id)->first();
+
+                if (! $invoice) {
+                    $this->recordLog("Invoice not found.");
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invoice not found.',
+                    ], 404);
+                }
+
+                $invoice->update([
+                    "status" => 'Returned',
+                ]);
+            }
+
+            $order->update([
+                "order_status"  => 'returned',
+                "return_reason" => $returnReason,
+            ]);
+
+            // Put the sold units back into sellable (available) stock.
+            $restocked = 0;
+            try {
+                $invoiceToReturn = $invoice ?? $order->invoice;
+                if ($invoiceToReturn) {
+                    $restocked = app(\App\Services\StockSyncService::class)->returnForInvoice($invoiceToReturn, $returnReason);
+                }
+            } catch (\Throwable $e) {
+                $this->recordLog("Stock return failed: " . $e->getMessage());
+            }
+
+            $this->recordLog("Order returned successfully.");
+
+            return response()->json([
+                'success'   => true,
+                'message'   => 'Order has been returned and stock restored.',
+                'restocked' => $restocked,
+                'order'     => $order,
+            ]);
+        } catch (\Exception $e) {
+            $this->recordLog("Error while returning order.");
+
+            return response()->json([
+                'success' => false,
+                'message' => "Service Error",
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function destroy($id)
     {
         $order = Order::where("id", $id)->first();
