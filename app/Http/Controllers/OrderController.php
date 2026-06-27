@@ -430,6 +430,7 @@ class OrderController extends Controller
                 ], 404);
             }
 
+            $invoice = null;
             if ($invoice_id) {
 
                 $invoice = Invoice::where("id", $invoice_id)->first();
@@ -441,10 +442,6 @@ class OrderController extends Controller
                         'message' => 'Invoice not found.',
                     ], 404);
                 }
-
-                $invoice->update([
-                    "status" => 'Cancelled',
-                ]);
             }
 
             $order->update([
@@ -452,14 +449,20 @@ class OrderController extends Controller
                 "cancel_reason" => $cancelReason,
             ]);
 
-            // Return any stock that was deducted when this order became an invoice.
-            try {
-                $invoiceToReverse = $invoice ?? $order->invoice;
-                if ($invoiceToReverse) {
-                    app(\App\Services\StockSyncService::class)->reverseForInvoice($invoiceToReverse);
+            // Mark the invoice cancelled and return its stock. Fall back to the
+            // order's invoice when the caller didn't pass an invoice_id, so the
+            // status update never depends on that param being present.
+            $invoiceToCancel = $invoice ?? $order->invoice;
+            if ($invoiceToCancel) {
+                $invoiceToCancel->update([
+                    "status" => 'Cancelled',
+                ]);
+
+                try {
+                    app(\App\Services\StockSyncService::class)->reverseForInvoice($invoiceToCancel);
+                } catch (\Throwable $e) {
+                    $this->recordLog("Stock reversal failed: " . $e->getMessage());
                 }
-            } catch (\Throwable $e) {
-                $this->recordLog("Stock reversal failed: " . $e->getMessage());
             }
 
             $this->recordLog("Order cancelled successfully.");
