@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BusinessSource;
+use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Product;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -190,10 +191,15 @@ class ReportController extends Controller
         $from   = request('from') ? request('from') : date("Y-m-d");
         $to     = request('to') ? request('to') : date("Y-m-d");
 
-        $orders = Order::orderByDesc('id')
-            ->where('order_status', "completed")    
-            ->whereBetween('order_date', [$from . " 00:00:00", $to . " 23:59:59"])
-            ->get()->toArray();
+        // Only invoiced orders, matching the Invoices list (filtered by invoice date).
+        $orders = Invoice::with('order')
+            ->whereBetween('created_at', [$from . " 00:00:00", $to . " 23:59:59"])
+            ->orderByDesc('id')
+            ->get()
+            ->pluck('order')   // get the Order behind each invoice
+            ->filter()         // drop any invoice whose order is missing
+            ->values()
+            ->toArray();
 
 
         // 2. Load the Blade view and pass the data
