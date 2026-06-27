@@ -88,7 +88,10 @@ class InvoiceController extends Controller
                 $q->where('status', $status);
             })
 
-            ->whereBetween('created_at', $dates)
+            // Skip the date window when searching so an invoice can be looked up
+            // by id / order ref / tracking regardless of when it was created
+            // (e.g. opening it directly from the inventory history drill-down).
+            ->when(! $search, fn ($q) => $q->whereBetween('created_at', $dates))
 
             ->orderByDesc('id')
             ->paginate($perPage);
