@@ -192,8 +192,10 @@ class ReportController extends Controller
         $to     = request('to') ? request('to') : date("Y-m-d");
 
         // Only invoiced orders, matching the Invoices list (filtered by invoice date).
+        // Exclude returned and cancelled invoices — they should not appear on the manifest.
         $orders = Invoice::with('order')
             ->whereBetween('created_at', [$from . " 00:00:00", $to . " 23:59:59"])
+            ->whereNotIn('status', ['Returned', 'Cancelled'])
             ->orderByDesc('id')
             ->get()
             ->pluck('order')   // get the Order behind each invoice
