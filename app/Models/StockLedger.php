@@ -10,6 +10,7 @@ class StockLedger extends Model
 
     /** Movement type constants — every stock change is one of these. */
     const GRN_RECEIVE          = 'grn_receive';
+    const GRN_REVERSAL         = 'grn_reversal';
     const ADJUSTMENT_INCREASE  = 'adjustment_increase';
     const ADJUSTMENT_DECREASE  = 'adjustment_decrease';
     const SALE                 = 'sale';
@@ -33,6 +34,7 @@ class StockLedger extends Model
     {
         $labels = [
             self::GRN_RECEIVE          => 'Goods Received',
+            self::GRN_REVERSAL         => 'Goods Receipt Reversed',
             self::ADJUSTMENT_INCREASE  => 'Adjustment (+)',
             self::ADJUSTMENT_DECREASE  => 'Adjustment (-)',
             self::SALE                 => 'Sale',

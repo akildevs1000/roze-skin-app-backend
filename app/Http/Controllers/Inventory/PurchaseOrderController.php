@@ -6,12 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\PurchaseOrderAttachment;
+use App\Models\GoodsReceipt;
+use App\Models\StockLedger;
+use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 
 class PurchaseOrderController extends Controller
 {
+    public function __construct(private StockService $stock)
+    {
+    }
+
     /** Lightweight list for selects (e.g. choosing a PO to receive against). */
     public function dropDown()
     {
@@ -79,27 +86,73 @@ class PurchaseOrderController extends Controller
 
     public function update(Request $request, PurchaseOrder $purchaseOrder)
     {
-        if (in_array($purchaseOrder->status, ['received', 'cancelled'])) {
-            return response()->json(['message' => 'A received or cancelled purchase order cannot be edited.'], 422);
+        if ($purchaseOrder->status === 'cancelled') {
+            return response()->json(['message' => 'A cancelled purchase order cannot be edited.'], 422);
         }
 
         $data = $this->validatePayload($request);
+
+        // Editing replaces all lines, so any goods already received against this PO
+        // must have their stock reversed first — otherwise on-hand would stay inflated.
+        $hadReceipts = $purchaseOrder->received_qty > 0;
 
         // Allow a draft to be promoted to pending (Save and Send); never downgrade.
         $header = $this->header($data);
         if (($data['status'] ?? null) === 'pending' && $purchaseOrder->status === 'draft') {
             $header['status'] = 'pending';
         }
+        // A previously (partially) received PO goes back to a clean pending state after the rewrite.
+        if ($hadReceipts) {
+            $header['status'] = 'pending';
+        }
 
-        return DB::transaction(function () use ($data, $purchaseOrder, $header) {
+        return DB::transaction(function () use ($data, $purchaseOrder, $header, $hadReceipts) {
+            if ($hadReceipts) {
+                $this->reverseReceipts($purchaseOrder);
+            }
+
             $purchaseOrder->update($header);
 
-            // Replace lines (none received yet at this status).
+            // Replace lines (received quantities were reversed above, so they reset to 0).
             $purchaseOrder->items()->delete();
             $this->syncItems($purchaseOrder, $data['items'], $data['tax_mode'] ?? 'exclusive');
 
             return $purchaseOrder->load('items.product', 'vendor', 'warehouse', 'customer', 'attachments');
         });
+    }
+
+    /**
+     * Reverse every goods receipt booked against this PO: write a compensating
+     * stock-out ledger entry for each received line, then remove the receipts.
+     * Allowed to drive stock negative (e.g. goods already sold) so the rewrite
+     * always succeeds — the negative balance then reflects the real shortfall.
+     */
+    private function reverseReceipts(PurchaseOrder $purchaseOrder): void
+    {
+        $receipts = GoodsReceipt::with('items')
+            ->where('purchase_order_id', $purchaseOrder->id)
+            ->get();
+
+        foreach ($receipts as $grn) {
+            foreach ($grn->items as $item) {
+                $this->stock->decrease(
+                    $item->product_id,
+                    $item->qty_received,
+                    StockLedger::GRN_REVERSAL,
+                    StockLedger::BUCKET_SELLABLE,
+                    [
+                        'source_type'    => 'goods_receipt',
+                        'source_id'      => $grn->id,
+                        'reference'      => $grn->reference_id,
+                        'reason'         => 'Purchase order ' . $purchaseOrder->reference_id . ' edited/deleted',
+                        'allow_negative' => true,
+                    ]
+                );
+            }
+
+            $grn->items()->delete();
+            $grn->delete();
+        }
     }
 
     private function validatePayload(Request $request): array
@@ -219,14 +272,25 @@ class PurchaseOrderController extends Controller
 
     public function destroy(PurchaseOrder $purchaseOrder)
     {
-        if ($purchaseOrder->received_qty > 0) {
-            return response()->json(['message' => 'A purchase order with received goods cannot be deleted.'], 422);
-        }
+        return DB::transaction(function () use ($purchaseOrder) {
+            // Reverse the stock from any goods received against this PO, then drop the receipts.
+            if ($purchaseOrder->received_qty > 0) {
+                $this->reverseReceipts($purchaseOrder);
+            }
 
-        $purchaseOrder->items()->delete();
-        $purchaseOrder->delete();
+            // Remove attachment files + records so nothing is orphaned.
+            foreach ($purchaseOrder->attachments as $attachment) {
+                if ($attachment->path && File::exists(public_path($attachment->path))) {
+                    File::delete(public_path($attachment->path));
+                }
+            }
+            $purchaseOrder->attachments()->delete();
 
-        return response()->noContent();
+            $purchaseOrder->items()->delete();
+            $purchaseOrder->delete();
+
+            return response()->noContent();
+        });
     }
 
     /** Pending (ordered but not yet received) quantities — feeds rule #13 "purchase pending". */
