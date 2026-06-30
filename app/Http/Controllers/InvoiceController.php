@@ -187,6 +187,15 @@ class InvoiceController extends Controller
                 "delivery_service_id" => $request->delivery_service_id,
             ]);
 
+            // Persist any address edits made in the convert-to-invoice dialog.
+            // Keyed on order_id, so this updates this order's own frozen copy.
+            Customer::storeOrderAddresses(
+                $validated['customer_id'],
+                $validated['order_id'],
+                $request->shipping_address ?? [],
+                $request->billing_address ?? []
+            );
+
             // Sync inventory: decrement stock for each mapped order line.
             // Never let a stock/mapping issue block the conversion itself.
             try {
