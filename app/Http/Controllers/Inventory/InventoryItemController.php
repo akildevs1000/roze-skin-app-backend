@@ -28,19 +28,33 @@ class InventoryItemController extends Controller
     }
 
     /**
-     * Per-item history: current balances + lifetime counts by movement type,
-     * plus the recent ledger entries. Used by the row drill-down on the list.
+     * Per-item history: current balances + counts by movement type, plus the
+     * recent ledger entries. Used by the row drill-down on the list.
+     *
+     * Optional `from`/`to` (YYYY-MM-DD) scope the movement aggregates and the
+     * ledger to a date range so the summary cards match the History table for
+     * the selected period. Current balances (available/non_sellable) are always
+     * a live snapshot and are never date-filtered.
      */
-    public function history(InventoryItem $inventoryItem)
+    public function history(InventoryItem $inventoryItem, Request $request)
     {
         $id    = $inventoryItem->id;
         $stock = InventoryStock::where('product_id', $id)->first();
 
-        $sum = function (array $types, $abs = false) use ($id) {
+        $from = $request->filled('from') ? $request->from : null;
+        $to   = $request->filled('to') ? $request->to : null;
+
+        $dateScope = function ($query) use ($from, $to) {
+            if ($from) $query->whereDate('created_at', '>=', $from);
+            if ($to)   $query->whereDate('created_at', '<=', $to);
+            return $query;
+        };
+
+        $sum = function (array $types, $abs = false) use ($id, $dateScope) {
             $expr = $abs ? 'COALESCE(SUM(ABS(quantity)),0)' : 'COALESCE(SUM(quantity),0)';
-            return (int) StockLedger::where('product_id', $id)
-                ->whereIn('movement_type', $types)
-                ->selectRaw("$expr as t")->value('t');
+            return (int) $dateScope(
+                StockLedger::where('product_id', $id)->whereIn('movement_type', $types)
+            )->selectRaw("$expr as t")->value('t');
         };
 
         $sellable    = $stock ? (int) $stock->sellable_qty : 0;
@@ -77,9 +91,10 @@ class InventoryItemController extends Controller
                 'adjusted_out' => $sum([StockLedger::ADJUSTMENT_DECREASE], true),
             ],
             'last_purchase' => $lastPurchase,
-            'ledger'  => StockLedger::where('product_id', $id)
-                ->whereNotIn('movement_type', [StockLedger::ADJUSTMENT_INCREASE, StockLedger::ADJUSTMENT_DECREASE])
-                ->orderByDesc('id')->limit(200)->get(),
+            'ledger'  => $dateScope(
+                StockLedger::where('product_id', $id)
+                    ->whereNotIn('movement_type', [StockLedger::ADJUSTMENT_INCREASE, StockLedger::ADJUSTMENT_DECREASE])
+            )->orderByDesc('id')->limit(200)->get(),
         ];
     }
 
