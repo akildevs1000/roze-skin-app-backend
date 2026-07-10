@@ -191,10 +191,56 @@ class ReportController extends Controller
         $from   = request('from') ? request('from') : date("Y-m-d");
         $to     = request('to') ? request('to') : date("Y-m-d");
 
+        // Same filters the Invoices list uses, so the manifest contains exactly the
+        // rows the user has on screen. Each is optional — with none supplied the
+        // behaviour is unchanged (today's invoices for the given date window).
+        $search              = trim(request('search'));
+        $status              = request('status');
+        $customer_id         = request('customer_id');
+        $delivery_service_id = request('delivery_service_id');
+        $payment_method      = request('payment_method');
+
         // Only invoiced orders, matching the Invoices list (filtered by invoice date).
         // Exclude returned and cancelled invoices — they should not appear on the manifest.
         $orders = Invoice::with('order')
-            ->whereBetween('created_at', [$from . " 00:00:00", $to . " 23:59:59"])
+            ->when($search, function ($q) use ($search) {
+                $order_id = Order::where("order_id", $search)->value("id");
+
+                if ($order_id) {
+                    $q->where('order_id', $order_id);
+                } else {
+                    // Grouped so the OR cannot escape the other filters below.
+                    $q->where(function ($w) use ($search) {
+                        $w->where('id', env("WILD_CARD") ?? 'ILIKE', '%' . ltrim($search, '0') . '%')
+                            ->orWhereHas('order', function ($q2) use ($search) {
+                                $q2->where('tracking_number', $search);
+                            });
+                    });
+                }
+            })
+            ->when($customer_id, function ($q) use ($customer_id) {
+                $q->whereHas('order', function ($o) use ($customer_id) {
+                    $o->where('customer_id', $customer_id);
+                });
+            })
+            ->when($delivery_service_id, function ($q) use ($delivery_service_id) {
+                $q->whereHas('order', function ($o) use ($delivery_service_id) {
+                    $o->where('delivery_service_id', $delivery_service_id);
+                });
+            })
+            ->when($payment_method, function ($q) use ($payment_method) {
+                $q->whereHas('order', function ($o) use ($payment_method) {
+                    $o->where('payment_method', $payment_method);
+                });
+            })
+            ->when($status, function ($q) use ($status) {
+                $q->where('status', $status);
+            })
+            // Skip the date window when searching, so a lookup by id / order ref /
+            // tracking finds the invoice regardless of when it was created.
+            ->when(! $search, function ($q) use ($from, $to) {
+                $q->whereBetween('created_at', [$from . " 00:00:00", $to . " 23:59:59"]);
+            })
             ->whereNotIn('status', ['Returned', 'Cancelled'])
             ->orderByDesc('id')
             ->get()
