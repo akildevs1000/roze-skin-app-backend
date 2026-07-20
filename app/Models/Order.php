@@ -51,7 +51,12 @@ class Order extends Model
     ];
 
     protected $casts = [
-        "items" => "array",
+        "items"    => "array",
+        // order_id is a WooCommerce/marketplace id up to 17 digits — beyond
+        // JS's safe-integer range (Number.MAX_SAFE_INTEGER = 2^53-1). Serialize
+        // it as a string so the frontend renders the exact digits instead of
+        // JSON.parse silently rounding the last digit(s).
+        "order_id" => "string",
     ];
 
     protected $appends = ['date_time', 'total_paid_amount', 'reference_id', 'status_class'];
