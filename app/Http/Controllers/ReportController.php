@@ -337,6 +337,169 @@ class ReportController extends Controller
             ->header('Access-Control-Expose-Headers', 'Content-Disposition');
     }
 
+    /**
+     * Sales analysis for the "Analyse" page: revenue trend, best/worst-selling
+     * products, and channel mix over a date range. Read-only, JSON — mirrors
+     * the from/to convention of manifestReport()/awbPrintReport() above.
+     */
+    public function salesAnalysis()
+    {
+        return $this->computeSalesAnalysis(request('from'), request('to'));
+    }
+
+    /** Same data as salesAnalysis(), rendered as a PDF (dompdf) instead of JSON. */
+    public function salesAnalysisPdf()
+    {
+        $result = $this->computeSalesAnalysis(request('from'), request('to'));
+        $daily = $result['daily'];
+
+        // Month-over-month split at the midpoint of the daily series (same
+        // point used for each product's qty_m1/qty_m2 in computeSalesAnalysis).
+        $half = (int) ceil(count($daily) / 2);
+        $firstHalf = array_slice($daily, 0, $half);
+        $secondHalf = array_slice($daily, $half);
+        $sum = fn($rows, $key) => array_sum(array_column($rows, $key));
+        $m1 = ['revenue' => $sum($firstHalf, 'revenue'), 'orders' => $sum($firstHalf, 'orders')];
+        $m2 = ['revenue' => $sum($secondHalf, 'revenue'), 'orders' => $sum($secondHalf, 'orders')];
+        $revDelta = $m1['revenue'] > 0 ? (($m2['revenue'] - $m1['revenue']) / $m1['revenue']) * 100 : 0;
+
+        $avgDaily = count($daily) ? array_sum(array_column($daily, 'revenue')) / count($daily) : 0;
+        $peak = collect($daily)->sortByDesc('revenue')->first();
+        $peakMultiple = $avgDaily > 0 && $peak ? round($peak['revenue'] / $avgDaily) : 0;
+
+        $pdf = Pdf::loadView('report.sales-analysis', [
+            'd'            => $result,
+            'trendSvg'     => \App\Support\ReportCharts::trend($daily),
+            'm1'           => $m1,
+            'm2'           => $m2,
+            'revDelta'     => $revDelta,
+            'peak'         => $peak,
+            'peakMultiple' => $peakMultiple,
+            'generated_at' => now()->format('Y-m-d H:i') . ' ' . config('app.timezone'),
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download('Roze-Skincare-Sales-Analysis-' . $result['range']['from'] . '_to_' . $result['range']['to'] . '.pdf');
+    }
+
+    /** Shared aggregation behind salesAnalysis() (JSON) and salesAnalysisPdf(). */
+    private function computeSalesAnalysis($fromParam, $toParam): array
+    {
+        $from = $fromParam ? $fromParam : now()->subMonths(2)->toDateString();
+        $to   = $toParam ? $toParam : now()->toDateString();
+
+        $invoices = Invoice::with('order.delivery_service', 'order.business_source')
+            ->whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
+            ->whereNotIn('status', ['Cancelled', 'Returned'])
+            ->get();
+
+        // Split point for the month-over-month trend column: the midpoint of
+        // whatever range was requested (not hardcoded to "2 months").
+        $fromDate = \Carbon\Carbon::parse($from)->startOfDay();
+        $toDate   = \Carbon\Carbon::parse($to)->endOfDay();
+        $mid      = $fromDate->copy()->addSeconds($fromDate->diffInSeconds($toDate) / 2);
+
+        $products = [];
+        $dailyRevenue = [];
+        $dailyOrders = [];
+        $deliveryService = [];
+        $paymentMode = [];
+        $businessSource = [];
+        $customerSet = [];
+        $statusCount = [];
+        $totalRevenue = 0.0;
+        $totalItemsSold = 0;
+
+        foreach ($invoices as $inv) {
+            $order = $inv->order;
+            $items = $order ? (array) $order->items : [];
+            $day = $inv->created_at->toDateString();
+            $isFirstHalf = $inv->created_at->lt($mid);
+
+            $customerSet[$order->customer_id ?? ('inv-' . $inv->id)] = true;
+            $statusCount[$inv->status] = ($statusCount[$inv->status] ?? 0) + 1;
+
+            $ds = optional(optional($order)->delivery_service)->name ?? 'Unknown';
+            $deliveryService[$ds] = ($deliveryService[$ds] ?? 0) + 1;
+
+            // Normalise case-duplicate payment values (e.g. "COD" / "cod") and
+            // blank markers so the frontend doesn't have to.
+            $pmRaw = trim(optional($order)->payment_method ?? '');
+            $pm = match (true) {
+                $pmRaw === '' || $pmRaw === '---' => 'Unspecified',
+                strtolower($pmRaw) === 'cod'      => 'Cash on Delivery (COD)',
+                default                            => $pmRaw,
+            };
+            $paymentMode[$pm] = ($paymentMode[$pm] ?? 0) + 1;
+
+            $bsRaw = trim(optional(optional($order)->business_source)->name ?? '');
+            $bs = $bsRaw === '' || $bsRaw === '---' ? 'Unspecified' : $bsRaw;
+            $businessSource[$bs] = ($businessSource[$bs] ?? 0) + 1;
+
+            $lineTotal = 0.0;
+            foreach ($items as $line) {
+                $name = trim($line['item'] ?? 'Unknown item');
+                $qty  = (int) ($line['quantity'] ?? 0);
+                $rate = (float) ($line['rate'] ?? 0);
+                $rev  = $qty * $rate;
+                $lineTotal += $rev;
+
+                if (! isset($products[$name])) {
+                    $products[$name] = ['name' => $name, 'qty' => 0, 'revenue' => 0.0, 'orders' => 0, 'qty_m1' => 0, 'qty_m2' => 0];
+                }
+                $products[$name]['qty'] += $qty;
+                $products[$name]['revenue'] += $rev;
+                $products[$name]['orders']++;
+                if ($isFirstHalf) $products[$name]['qty_m1'] += $qty;
+                else $products[$name]['qty_m2'] += $qty;
+
+                $totalItemsSold += $qty;
+            }
+
+            $invTotal = (float) ($inv->total ?? $lineTotal);
+            $totalRevenue += $invTotal;
+            $dailyRevenue[$day] = ($dailyRevenue[$day] ?? 0) + $invTotal;
+            $dailyOrders[$day] = ($dailyOrders[$day] ?? 0) + 1;
+        }
+
+        // Fill every calendar day in range so zero-sales days show as real
+        // dips on the trend chart rather than being silently skipped.
+        $daily = [];
+        foreach (\Carbon\CarbonPeriod::create($fromDate, $toDate) as $d) {
+            $key = $d->toDateString();
+            $daily[] = ['date' => $key, 'revenue' => round($dailyRevenue[$key] ?? 0, 2), 'orders' => $dailyOrders[$key] ?? 0];
+        }
+
+        $byQty = collect($products)->sortByDesc('qty')->values();
+        $byRevenue = collect($products)->sortByDesc('revenue')->values();
+        $bottomByQty = collect($products)->sortBy('qty')->values();
+
+        $toChannel = fn($arr) => collect($arr)->map(fn($count, $label) => ['label' => $label, 'count' => $count])->sortByDesc('count')->values();
+
+        return [
+            'range' => ['from' => $from, 'to' => $to],
+            'summary' => [
+                'total_revenue'     => round($totalRevenue, 2),
+                'order_count'       => $invoices->count(),
+                'unique_customers'  => count($customerSet),
+                'total_items_sold'  => $totalItemsSold,
+                'unique_products'   => count($products),
+                'avg_order_value'   => $invoices->count() ? round($totalRevenue / $invoices->count(), 2) : 0,
+            ],
+            'daily'          => $daily,
+            // ->all() everywhere below: plain PHP arrays, not Collections — the
+            // PDF Blade view calls array_column()/max() on these directly.
+            'top_by_qty'     => $byQty->take(10)->values()->all(),
+            'top_by_revenue' => $byRevenue->take(10)->values()->all(),
+            'bottom_by_qty'  => $bottomByQty->take(12)->values()->all(),
+            'channels' => [
+                'delivery_service' => $toChannel($deliveryService)->all(),
+                'payment_mode'     => $toChannel($paymentMode)->all(),
+                'business_source'  => $toChannel($businessSource)->all(),
+            ],
+            'status_count' => $statusCount,
+        ];
+    }
+
     public function render($order, $defaultData)
     {
         $awb = $order->tracking_number;

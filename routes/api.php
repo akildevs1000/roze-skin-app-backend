@@ -103,6 +103,8 @@ Route::get('report-sources', [ReportController::class, "sources"]);
 
 Route::get('manifest-report', [ReportController::class, "manifestReport"]);
 Route::get('awb-print-report', [ReportController::class, "awbPrintReport"]);
+Route::get('sales-analysis', [ReportController::class, "salesAnalysis"]);
+Route::get('sales-analysis-pdf', [ReportController::class, "salesAnalysisPdf"]);
 
 Route::get('product-report', [ProductController::class, "report"]);
 Route::get('source-report', [BusinessSourceController::class, "report"]);

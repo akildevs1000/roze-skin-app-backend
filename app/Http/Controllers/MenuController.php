@@ -36,6 +36,10 @@ class MenuController extends Controller
                 'name'  => 'accounts',
             ],
             [
+                'label' => 'Analyse',
+                'name'  => 'analyse',
+            ],
+            [
                 'label' => 'Settings',
                 'name'  => 'settings',
             ],
@@ -175,6 +179,14 @@ class MenuController extends Controller
                 'title'   => 'Setup',
                 'to'      => '/setup',
                 'menu'    => 'setting',
+            ],
+            [
+                'topMenu' => 'analyse',
+                'icon'    => 'mdi-chart-line',
+                'module'  => 'analyse',
+                'title'   => 'Sales Analysis',
+                'to'      => '/analyse',
+                'menu'    => 'accounts_access',
             ],
         ];
 
