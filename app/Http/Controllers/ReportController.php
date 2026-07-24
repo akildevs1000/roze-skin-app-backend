@@ -369,7 +369,7 @@ class ReportController extends Controller
 
         $pdf = Pdf::loadView('report.sales-analysis', [
             'd'            => $result,
-            'trendSvg'     => \App\Support\ReportCharts::trend($daily),
+            'trendHtml'    => \App\Support\ReportCharts::weeklyRevenueBars($daily),
             'm1'           => $m1,
             'm2'           => $m2,
             'revDelta'     => $revDelta,

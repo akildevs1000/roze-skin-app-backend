@@ -3,66 +3,49 @@
 namespace App\Support;
 
 /**
- * Small inline-SVG chart builders for dompdf-rendered PDF reports.
- * Kept deliberately simple (no gradients/filters) — dompdf's SVG support
- * is reliable for flat fills, lines, and text but not for CSS-grade effects.
+ * Small HTML/CSS chart builder for dompdf-rendered PDF reports.
+ * Deliberately table/div-based, not SVG — dompdf renders inline <svg> as
+ * flattened text (confirmed by manual render check), but its div/table box
+ * model (used everywhere else in this report) is solid.
  */
 class ReportCharts
 {
-    /** Daily revenue trend as a filled line chart. $daily = [['date'=>, 'revenue'=>], ...]. */
-    public static function trend(array $daily, string $color = '#2a78d6', int $width = 760, int $height = 200): string
+    /**
+     * Daily revenue bucketed into weekly horizontal bars — trades daily
+     * granularity for a chart form dompdf actually renders correctly.
+     * $daily = [['date'=>'Y-m-d', 'revenue'=>float, 'orders'=>int], ...].
+     */
+    public static function weeklyRevenueBars(array $daily, string $color = '#2a78d6'): string
     {
-        $padL = 46; $padR = 16; $padT = 14; $padB = 26;
-        $w = $width - $padL - $padR;
-        $h = $height - $padT - $padB;
-        $n = count($daily);
-        if ($n < 2) return '';
+        if (empty($daily)) return '';
 
-        $vals = array_column($daily, 'revenue');
-        $max = max($vals) * 1.08;
-        $max = $max > 0 ? $max : 1;
+        $weeks = [];
+        foreach ($daily as $row) {
+            $weekStart = \Carbon\Carbon::parse($row['date'])->startOfWeek(\Carbon\Carbon::SUNDAY);
+            $key = $weekStart->toDateString();
+            if (! isset($weeks[$key])) {
+                $weeks[$key] = ['label' => $weekStart->format('d M'), 'revenue' => 0.0, 'orders' => 0];
+            }
+            $weeks[$key]['revenue'] += $row['revenue'];
+            $weeks[$key]['orders'] += $row['orders'];
+        }
+        ksort($weeks);
 
-        $x = fn($i) => $padL + ($n === 1 ? 0 : ($i / ($n - 1)) * $w);
-        $y = fn($v) => $padT + $h - ($v / $max) * $h;
+        $max = max(array_column($weeks, 'revenue')) ?: 1;
+        $money = fn($n) => 'AED ' . number_format($n, 0);
 
-        $pts = [];
-        foreach ($daily as $i => $row) $pts[] = round($x($i), 1) . ',' . round($y($row['revenue']), 1);
-        $linePts = implode(' ', $pts);
-        $areaPts = round($x(0), 1) . ',' . round($padT + $h, 1) . ' ' . $linePts . ' ' . round($x($n - 1), 1) . ',' . round($padT + $h, 1);
-
-        $gridlines = '';
-        for ($i = 0; $i <= 4; $i++) {
-            $v = ($max / 4) * $i;
-            $yy = round($y($v), 1);
-            $gridlines .= "<line x1=\"$padL\" y1=\"$yy\" x2=\"" . ($width - $padR) . "\" y2=\"$yy\" stroke=\"#e1e0d9\" stroke-width=\"1\"/>";
-            $label = $v >= 1000 ? round($v / 1000) . 'K' : round($v);
-            $gridlines .= "<text x=\"" . ($padL - 6) . "\" y=\"" . ($yy + 3) . "\" text-anchor=\"end\" font-size=\"9\" fill=\"#898781\">$label</text>";
+        $rows = '';
+        foreach ($weeks as $w) {
+            $pctW = max(2, round(($w['revenue'] / $max) * 100));
+            $rows .= '<table style="width:100%; margin-bottom:4px;"><tr>'
+                . '<td width="18%" style="font-size:8pt;">' . e($w['label']) . '</td>'
+                . '<td width="62%"><div style="background:#eef1f5; border-radius:3px; height:12px;">'
+                . '<div style="width:' . $pctW . '%; background:' . $color . '; height:12px; border-radius:3px;"></div>'
+                . '</div></td>'
+                . '<td width="20%" style="text-align:right; font-size:8pt; font-weight:bold; color:#52514e;">' . $money($w['revenue']) . '</td>'
+                . '</tr></table>';
         }
 
-        $labelEvery = max(1, (int) ceil($n / 8));
-        $xLabels = '';
-        $lastLx = -1000;
-        foreach ($daily as $i => $row) {
-            if ($i % $labelEvery !== 0 && $i !== $n - 1) continue;
-            $lx = round($x($i), 1);
-            if ($lx - $lastLx < 40 && $i !== $n - 1) continue;
-            if ($lx - $lastLx < 40 && $i === $n - 1) continue; // keep it simple in PDF: skip if would collide
-            $lastLx = $lx;
-            $lbl = substr($row['date'], 5);
-            $xLabels .= "<text x=\"$lx\" y=\"" . ($height - 6) . "\" text-anchor=\"middle\" font-size=\"8.5\" fill=\"#898781\">$lbl</text>";
-        }
-
-        $peakIdx = array_keys($vals, max($vals))[0];
-        $peak = $daily[$peakIdx];
-        $peakX = round($x($peakIdx), 1);
-        $peakY = round($y($peak['revenue']), 1);
-
-        return "<svg width=\"$width\" height=\"$height\" viewBox=\"0 0 $width $height\" xmlns=\"http://www.w3.org/2000/svg\">"
-            . $gridlines
-            . "<polygon points=\"$areaPts\" fill=\"$color\" fill-opacity=\"0.12\"/>"
-            . "<polyline points=\"$linePts\" fill=\"none\" stroke=\"$color\" stroke-width=\"2\"/>"
-            . "<circle cx=\"$peakX\" cy=\"$peakY\" r=\"3.5\" fill=\"$color\"/>"
-            . $xLabels
-            . '</svg>';
+        return $rows;
     }
 }

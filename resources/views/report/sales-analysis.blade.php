@@ -96,9 +96,9 @@
 
   <!-- TREND -->
   <div class="section">
-    <div class="section-title">Daily Revenue Trend</div>
+    <div class="section-title">Weekly Revenue Trend</div>
     <div class="card-box">
-      {!! $trendSvg !!}
+      {!! $trendHtml !!}
     </div>
     @if($peak)
     <div class="callout" style="margin-top:8px;">
