@@ -65,7 +65,7 @@
         <td width="33%" class="card-box">
           <div style="font-size:7.5pt; color:{{ $muted }}; text-transform:uppercase;">Total Orders</div>
           <div style="font-size:16pt; font-weight:bold;">{{ $num($d['summary']['order_count']) }}</div>
-          <div style="font-size:8pt; color:{{ $muted }};">{{ $num($d['summary']['unique_customers']) }} unique customers</div>
+          <div style="font-size:8pt; color:{{ $muted }};">{{ $num($d['summary']['unique_customers']) }} unique customers &middot; {{ $num($d['summary']['repeat_customers']) }} regular ({{ $pct($d['summary']['repeat_customers'], $d['summary']['unique_customers']) }})</div>
         </td>
         <td width="33%" class="card-box">
           <div style="font-size:7.5pt; color:{{ $muted }}; text-transform:uppercase;">Items Sold</div>

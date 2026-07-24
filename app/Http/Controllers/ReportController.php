@@ -415,7 +415,8 @@ class ReportController extends Controller
             $day = $inv->created_at->toDateString();
             $isFirstHalf = $inv->created_at->lt($mid);
 
-            $customerSet[$order->customer_id ?? ('inv-' . $inv->id)] = true;
+            $custKey = $order->customer_id ?? ('inv-' . $inv->id);
+            $customerSet[$custKey] = ($customerSet[$custKey] ?? 0) + 1;
             $statusCount[$inv->status] = ($statusCount[$inv->status] ?? 0) + 1;
 
             $ds = optional(optional($order)->delivery_service)->name ?? 'Unknown';
@@ -481,6 +482,9 @@ class ReportController extends Controller
                 'total_revenue'     => round($totalRevenue, 2),
                 'order_count'       => $invoices->count(),
                 'unique_customers'  => count($customerSet),
+                // "Regular"/repeat customers: placed more than one order in
+                // this period — same definition as CustomerController::repeatedCustomerReport().
+                'repeat_customers'  => count(array_filter($customerSet, fn ($c) => $c > 1)),
                 'total_items_sold'  => $totalItemsSold,
                 'unique_products'   => count($products),
                 'avg_order_value'   => $invoices->count() ? round($totalRevenue / $invoices->count(), 2) : 0,
