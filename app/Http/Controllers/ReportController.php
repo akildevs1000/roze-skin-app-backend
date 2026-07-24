@@ -440,8 +440,11 @@ class ReportController extends Controller
             foreach ($items as $line) {
                 $name = trim($line['item'] ?? 'Unknown item');
                 $qty  = (int) ($line['quantity'] ?? 0);
-                $rate = (float) ($line['rate'] ?? 0);
-                $rev  = $qty * $rate;
+                // Use the line's own "total", not qty*rate: bundle child lines carry
+                // their component's normal "rate" for display but total=0 (the
+                // customer paid once via the bundle's own line) — qty*rate double-
+                // charges those. Fall back to qty*rate only when total is absent.
+                $rev = isset($line['total']) ? (float) $line['total'] : $qty * (float) ($line['rate'] ?? 0);
                 $lineTotal += $rev;
 
                 if (! isset($products[$name])) {
