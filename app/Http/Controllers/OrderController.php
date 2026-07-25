@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Order\ValidationRequest;
 use App\Jobs\SendEmail;
 use App\Jobs\WhastappSender;
+use App\Models\BusinessSource;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Order;
@@ -275,6 +276,16 @@ class OrderController extends Controller
             $validatedData["customer_id"] = $customer->id ?? 0;
             $validatedData["order_date"]  = request("order_date", date("Y-m-d H:i:s"));
             $validatedData["order_status"]  = $paymentMethod === 'cod' ? 'processing' : $orderStatus;
+
+            // The real website checkout never sends business_source_id, so it lands
+            // empty and the order shows "---" in the Business Source column. Default
+            // it to "Website" ONLY when the caller didn't supply one — an explicit
+            // value (staff manual entry, Whatsapp tool, any other integration) is
+            // never overridden.
+            if (empty($validatedData['business_source_id'])) {
+                $validatedData['business_source_id'] = BusinessSource::where('name', 'Website')->value('id');
+            }
+
             $order                        = Order::create($validatedData);
 
             // Freeze this order's own copy of the address (keeps history per order).
