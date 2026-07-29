@@ -36,9 +36,19 @@ class InventoryController extends Controller
     /** Inventory items + stock for selects. */
     public function dropDown()
     {
+        // Most recent "opening stock" adjustment per product, if any — filtered on
+        // both movement_type AND reference='OPENING' so a future generic manual
+        // stock-correction feature (which would likely reuse the same adjustment
+        // movement types) can never be mistaken for an opening-stock date.
+        $openingDates = StockLedger::selectRaw('product_id, MAX(created_at) as opening_date')
+            ->where('reference', 'OPENING')
+            ->whereIn('movement_type', [StockLedger::ADJUSTMENT_INCREASE, StockLedger::ADJUSTMENT_DECREASE])
+            ->groupBy('product_id');
+
         return InventoryItem::query()
             ->where('inventory_items.status', 'active')
             ->leftJoin('inventory_stocks as s', 's.product_id', '=', 'inventory_items.id')
+            ->leftJoinSub($openingDates, 'ol', 'ol.product_id', '=', 'inventory_items.id')
             ->select(
                 'inventory_items.id',
                 'inventory_items.name',
@@ -46,7 +56,8 @@ class InventoryController extends Controller
                 'inventory_items.image',
                 'inventory_items.unit_cost',
                 DB::raw('COALESCE(s.sellable_qty, 0) as sellable_qty'),
-                DB::raw('COALESCE(s.non_sellable_qty, 0) as non_sellable_qty')
+                DB::raw('COALESCE(s.non_sellable_qty, 0) as non_sellable_qty'),
+                'ol.opening_date'
             )
             ->orderBy('inventory_items.name')
             ->get();
