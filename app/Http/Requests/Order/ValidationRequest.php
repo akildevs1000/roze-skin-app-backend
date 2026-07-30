@@ -58,7 +58,14 @@ class ValidationRequest extends FormRequest
             'shipping_method' => 'nullable|string',
             'items' => 'required|array|min:1',
             'items.*.item' => 'required',
-            'items.*.product_id' => 'required',
+            // Staff can add a line for a real catalog product that isn't in this
+            // app's local product list (used only for autofill suggestions) — its
+            // product_id is then genuinely unknown here. Was "required", which
+            // blocked Submit entirely for any such line. Downstream consumers
+            // (stock deduction, the order-items sync job) already tolerate a
+            // missing product_id gracefully (reported as "unmapped" / defaulted
+            // to 0) — this was purely an over-strict validation rule.
+            'items.*.product_id' => 'nullable',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.rate' => 'required|numeric|min:0',
             'items.*.tax' => 'required|numeric|min:0',
