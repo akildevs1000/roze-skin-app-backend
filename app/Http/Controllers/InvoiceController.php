@@ -332,7 +332,7 @@ class InvoiceController extends Controller
                     "companyName" => $customer->full_name,
                 ],
                 "address" => [
-                    "line1" => $shipTo?->address_1 ?? "No Address given",
+                    "line1" => $this->addressWithSpecialInstructions($shipTo?->address_1 ?? "No Address given", $order->special_instructions),
                     "city" => $shipTo?->city ?? "No City given",
                     "countryCode" => "AE",
                     "zipCode" => "00000",
@@ -438,6 +438,17 @@ class InvoiceController extends Controller
         Log::channel('order_emx')->info("EMX Payload End: $order_id");
 
         return $data;
+    }
+
+    public function addressWithSpecialInstructions($address, $specialInstructions)
+    {
+        $specialInstructions = trim((string) $specialInstructions);
+
+        if ($specialInstructions === "") {
+            return $address;
+        }
+
+        return "{$address} ({$specialInstructions})";
     }
 
     public function getBoxDimension($box = "Small")
@@ -564,7 +575,7 @@ class InvoiceController extends Controller
             'receiver_name' => $customer->full_name,
             'receiver_country' => 'AE',
             'receiver_city' => $shipTo?->city ?? 'Dubai',
-            'receiver_address' =>  $shipTo?->address_1 ?? "No Address given",
+            'receiver_address' =>  $this->addressWithSpecialInstructions($shipTo?->address_1 ?? "No Address given", $order->special_instructions),
             'receiver_phone' => $customer->whatsapp . " " . $customer->phone,
 
             // Content Details
