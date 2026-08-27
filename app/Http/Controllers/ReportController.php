@@ -344,7 +344,7 @@ class ReportController extends Controller
      */
     public function salesAnalysis()
     {
-        return $this->computeSalesAnalysis(request('from'), request('to'));
+        return $this->computeSalesAnalysis(request('from'), request('to'), request('product_id'));
     }
 
     /** Same data as salesAnalysis(), rendered as a PDF (dompdf) instead of JSON. */
@@ -382,7 +382,7 @@ class ReportController extends Controller
     }
 
     /** Shared aggregation behind salesAnalysis() (JSON) and salesAnalysisPdf(). */
-    private function computeSalesAnalysis($fromParam, $toParam): array
+    private function computeSalesAnalysis($fromParam, $toParam, $productId = null): array
     {
         $from = $fromParam ? $fromParam : now()->subMonths(2)->toDateString();
         $to   = $toParam ? $toParam : now()->toDateString();
@@ -391,6 +391,15 @@ class ReportController extends Controller
             ->whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->whereNotIn('status', ['Cancelled', 'Returned'])
             ->get();
+
+        // Optional single-product filter: order line items store the product's
+        // "description" as free text (item.item), so match against that —
+        // same convention as getProducts() above.
+        $productFilter = $productId ? Product::find($productId) : null;
+        $productCustomerSet = [];
+        $productQty = 0;
+        $productRevenue = 0.0;
+        $productOrders = 0;
 
         // Split point for the month-over-month trend column: the midpoint of
         // whatever range was requested (not hardcoded to "2 months").
@@ -437,6 +446,7 @@ class ReportController extends Controller
             $businessSource[$bs] = ($businessSource[$bs] ?? 0) + 1;
 
             $lineTotal = 0.0;
+            $matchesProductFilter = false;
             foreach ($items as $line) {
                 $name = trim($line['item'] ?? 'Unknown item');
                 $qty  = (int) ($line['quantity'] ?? 0);
@@ -456,7 +466,18 @@ class ReportController extends Controller
                 if ($isFirstHalf) $products[$name]['qty_m1'] += $qty;
                 else $products[$name]['qty_m2'] += $qty;
 
+                if ($productFilter && $name === trim($productFilter->description)) {
+                    $matchesProductFilter = true;
+                    $productQty += $qty;
+                    $productRevenue += $rev;
+                }
+
                 $totalItemsSold += $qty;
+            }
+
+            if ($matchesProductFilter) {
+                $productOrders++;
+                $productCustomerSet[$custKey] = ($productCustomerSet[$custKey] ?? 0) + 1;
             }
 
             $invTotal = (float) ($inv->total ?? $lineTotal);
@@ -504,6 +525,15 @@ class ReportController extends Controller
                 'business_source'  => $toChannel($businessSource)->all(),
             ],
             'status_count' => $statusCount,
+            'product_filter' => $productFilter ? [
+                'product_id'       => $productFilter->id,
+                'name'             => $productFilter->description,
+                'orders'           => $productOrders,
+                'qty'              => $productQty,
+                'revenue'          => round($productRevenue, 2),
+                'unique_customers' => count($productCustomerSet),
+                'repeat_customers' => count(array_filter($productCustomerSet, fn ($c) => $c > 1)),
+            ] : null,
         ];
     }
 
