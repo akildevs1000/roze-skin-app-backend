@@ -6,6 +6,8 @@ use App\Models\BusinessSource;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\WpProductMap;
+use App\Models\WpProductMapItem;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\CarbonPeriod;
 use setasign\Fpdi\Fpdi;
@@ -392,10 +394,33 @@ class ReportController extends Controller
             ->whereNotIn('status', ['Cancelled', 'Returned'])
             ->get();
 
-        // Optional single-product filter: order line items store the product's
-        // "description" as free text (item.item), so match against that —
-        // same convention as getProducts() above.
+        // Optional single-product filter. Order lines carry both a product_id
+        // and a free-text name (item.item); match primarily on product_id
+        // because the same physical product is sometimes listed more than
+        // once on the website under a different, later-renamed title — those
+        // duplicate listings still share one WpProductMap-mapped inventory
+        // item, so pull in their WooCommerce product ids too. Name match is
+        // kept only as a fallback for lines that came in without a product_id.
         $productFilter = $productId ? Product::find($productId) : null;
+        $productWcIds = [];
+        $productOwnName = null;
+        if ($productFilter) {
+            $productOwnName = trim($productFilter->description);
+            $productWcIds[] = (string) $productFilter->id;
+
+            $ownMap = WpProductMap::where('wp_product_id', (string) $productFilter->id)->first();
+            if ($ownMap) {
+                $itemIds = $ownMap->items()->pluck('inventory_item_id');
+                if ($itemIds->isNotEmpty()) {
+                    $siblingMapIds = WpProductMapItem::whereIn('inventory_item_id', $itemIds)->pluck('wp_product_map_id');
+                    $siblingWcIds = WpProductMap::whereIn('id', $siblingMapIds)->pluck('wp_product_id');
+                    foreach ($siblingWcIds as $wcId) {
+                        $productWcIds[] = (string) $wcId;
+                    }
+                }
+            }
+            $productWcIds = array_values(array_unique($productWcIds));
+        }
         $productCustomerSet = [];
         $productQty = 0;
         $productRevenue = 0.0;
@@ -466,7 +491,12 @@ class ReportController extends Controller
                 if ($isFirstHalf) $products[$name]['qty_m1'] += $qty;
                 else $products[$name]['qty_m2'] += $qty;
 
-                if ($productFilter && $name === trim($productFilter->description)) {
+                $linePid = trim((string) ($line['product_id'] ?? ''));
+                $isProductMatch = $productFilter && (
+                    ($linePid !== '' && $linePid !== '0' && in_array($linePid, $productWcIds, true))
+                    || $name === $productOwnName
+                );
+                if ($isProductMatch) {
                     $matchesProductFilter = true;
                     $productQty += $qty;
                     $productRevenue += $rev;
