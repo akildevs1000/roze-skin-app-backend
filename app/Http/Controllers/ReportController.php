@@ -406,11 +406,21 @@ class ReportController extends Controller
         $productOwnName = null;
         if ($productFilter) {
             $productOwnName = trim($productFilter->description);
-            $productWcIds[] = (string) $productFilter->id;
 
-            $ownMap = WpProductMap::where('wp_product_id', (string) $productFilter->id)->first();
-            if ($ownMap) {
-                $itemIds = $ownMap->items()->pluck('inventory_item_id');
+            // The internal catalog id doesn't always equal the WooCommerce
+            // product id it originated from — some rows happen to share the
+            // same number, others (e.g. catalog entries added after the fact)
+            // don't, though item_number often still carries the real WC id.
+            // Seed the lookup from both so it works either way.
+            $seedIds = array_values(array_filter([
+                (string) $productFilter->id,
+                trim((string) $productFilter->item_number),
+            ], fn ($v) => $v !== ''));
+            $productWcIds = $seedIds;
+
+            $ownMaps = WpProductMap::whereIn('wp_product_id', $seedIds)->get();
+            if ($ownMaps->isNotEmpty()) {
+                $itemIds = WpProductMapItem::whereIn('wp_product_map_id', $ownMaps->pluck('id'))->pluck('inventory_item_id');
                 if ($itemIds->isNotEmpty()) {
                     $siblingMapIds = WpProductMapItem::whereIn('inventory_item_id', $itemIds)->pluck('wp_product_map_id');
                     $siblingWcIds = WpProductMap::whereIn('id', $siblingMapIds)->pluck('wp_product_id');
