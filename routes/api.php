@@ -88,6 +88,7 @@ Route::middleware('auth:sanctum')->prefix('external')->group(function () {
 Route::apiResource('invoices', InvoiceController::class);
 Route::get('invoice-list', [InvoiceController::class, "dropDown"]);
 Route::get('invoices-stats', [InvoiceController::class, "stats"]);
+Route::patch('invoices/{Invoice}/company-profile', [InvoiceController::class, "updateCompanyProfile"]);
 
 Route::post('/whatsapp-client-json', [WhatsappClientController::class, 'store']);
 Route::get('/whatsapp-client-json', [WhatsappClientController::class, 'show']);

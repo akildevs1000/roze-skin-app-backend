@@ -228,6 +228,23 @@ class InvoiceController extends Controller
         }
     }
 
+    /**
+     * Which company address/letterhead block to print on this invoice
+     * (Analyse/Invoice screens let the user pick one of a few registered
+     * business addresses per invoice). Separate from update() so this one
+     * field can be changed without the full invoice-edit validation.
+     */
+    public function updateCompanyProfile(Request $request, Invoice $Invoice)
+    {
+        $validated = $request->validate([
+            'company_profile' => 'required|string|in:1,2,3',
+        ]);
+
+        $Invoice->update($validated);
+
+        return response()->json($Invoice);
+    }
+
     public function update(Request $request, Invoice $Invoice)
     {
         // Validate incoming request data
