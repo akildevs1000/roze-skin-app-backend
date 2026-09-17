@@ -70,6 +70,12 @@ class ValidationRequest extends FormRequest
             'items.*.rate' => 'required|numeric|min:0',
             'items.*.tax' => 'required|numeric|min:0',
             'items.*.total' => 'required|numeric|min:0',
+            // The Any 3/Any 4 bundle picker's chosen-products note. validated()
+            // drops any array key with no rule of its own, so without this line
+            // the note vanished silently on save - it showed correctly while
+            // picking products, then was simply never in the data that reached
+            // the database, invoices included.
+            'items.*.bundle_note' => 'nullable|string|max:255',
 
             'business_source_id' => 'nullable',
             'delivery_service_id' => 'nullable',

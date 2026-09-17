@@ -288,14 +288,24 @@ class InvoiceController extends Controller
 
         $order = Order::with("delivery_service")->find($order_id);
 
+        // Every early exit below has to answer as JSON, not as a bare string /
+        // false / null. The caller requests this response as a blob and saves
+        // it straight to disk as invoice.pdf, so anything that is not real PDF
+        // bytes used to download as an unopenable "PDF".
         if (!$order) {
             Log::channel('order_emx')->info("Order not found: $order_id");
             Log::channel('order_emx')->info("EMX Payload End: $order_id");
-            return;
+            return response()->json([
+                'label' => false,
+                'message' => "Invoice saved. Order $order_id was not found, so no shipping label was created.",
+            ]);
         }
 
-        if ($order->delivery_service->name !== "EMX") {
-            return "Delivery service is not EMX, skipping EMX shipment creation for order: $order_id";
+        if (optional($order->delivery_service)->name !== "EMX") {
+            return response()->json([
+                'label' => false,
+                'message' => 'Invoice saved. This order does not ship with EMX, so there is no shipping label to print.',
+            ]);
         }
 
         $awb = $order->tracking_number;
@@ -412,7 +422,10 @@ class InvoiceController extends Controller
 
                 Log::channel('order_emx')->info("EMX Payload End: $order_id");
 
-                return false;
+                return response()->json([
+                    'label' => false,
+                    'message' => 'Invoice saved, but EMX rejected the shipment request, so no label was produced.',
+                ]);
             }
 
             Log::channel('order_emx')->info('EMX API request successful', [
@@ -449,12 +462,11 @@ class InvoiceController extends Controller
 
             Log::channel('order_emx')->info("EMX Payload End: $order_id");
 
-            return false;
+            return response()->json([
+                'label' => false,
+                'message' => 'Invoice saved, but the EMX request failed, so no label was produced.',
+            ]);
         }
-
-        Log::channel('order_emx')->info("EMX Payload End: $order_id");
-
-        return $data;
     }
 
     public function addressWithSpecialInstructions($address, $specialInstructions)
