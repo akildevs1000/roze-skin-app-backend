@@ -429,18 +429,6 @@ class OrderController extends Controller
 
             $this->recordLog("Cancel order request received.");
 
-            $order = Order::where("order_id", $orderId)->first();
-
-            if (! $order) {
-
-                $this->recordLog("Order not found.");
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Order not found.',
-                ], 404);
-            }
-
             $invoice = null;
             if ($invoice_id) {
 
@@ -453,6 +441,24 @@ class OrderController extends Controller
                         'message' => 'Invoice not found.',
                     ], 404);
                 }
+            }
+
+            // Resolve through the invoice first. order_id here is the store's
+            // order reference, which is 0 for every order raised inside this
+            // app, so looking it up directly would cancel whichever of those
+            // happens to come back first rather than the one asked for.
+            $order = $invoice
+                ? $invoice->order
+                : ($orderId ? Order::where("order_id", $orderId)->first() : null);
+
+            if (! $order) {
+
+                $this->recordLog("Order not found.");
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found.',
+                ], 404);
             }
 
             $order->update([
