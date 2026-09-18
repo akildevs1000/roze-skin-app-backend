@@ -75,7 +75,9 @@ class ValidationRequest extends FormRequest
             // the note vanished silently on save - it showed correctly while
             // picking products, then was simply never in the data that reached
             // the database, invoices included.
-            'items.*.bundle_note' => 'nullable|string|max:255',
+            // JSON-encoded [{name, qty}, ...] of full catalog names - an "Any 4"
+            // bundle with long product titles comfortably exceeds 255 chars.
+            'items.*.bundle_note' => 'nullable|string|max:2000',
 
             'business_source_id' => 'nullable',
             'delivery_service_id' => 'nullable',
