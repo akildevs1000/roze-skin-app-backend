@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
@@ -509,16 +510,6 @@ class OrderController extends Controller
 
             $this->recordLog("Return order request received.");
 
-            $order = Order::where("order_id", $orderId)->first();
-
-            if (! $order) {
-                $this->recordLog("Order not found.");
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Order not found.',
-                ], 404);
-            }
-
             $invoice = null;
             if ($invoice_id) {
                 $invoice = Invoice::where("id", $invoice_id)->first();
@@ -534,6 +525,21 @@ class OrderController extends Controller
                 $invoice->update([
                     "status" => 'Returned',
                 ]);
+            }
+
+            // Resolve through the invoice first: order_id is the store's order
+            // reference, which is 0 for every order raised inside this app, so
+            // looking it up directly would return whichever of those came first.
+            $order = $invoice
+                ? $invoice->order
+                : ($orderId ? Order::where("order_id", $orderId)->first() : null);
+
+            if (! $order) {
+                $this->recordLog("Order not found.");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found.',
+                ], 404);
             }
 
             $order->update([
@@ -562,6 +568,90 @@ class OrderController extends Controller
             ]);
         } catch (\Exception $e) {
             $this->recordLog("Error while returning order.");
+
+            return response()->json([
+                'success' => false,
+                'message' => "Service Error",
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Undo a convert-to-invoice that was done by mistake, putting the order
+     * back into processing.
+     *
+     * The invoice is deleted rather than marked cancelled on purpose. store()
+     * builds invoices with updateOrCreate(['order_id' => ...]), so a kept row
+     * would be reused when the order is converted again — and deductForInvoice()
+     * skips any invoice that already carries SALE movements. Keeping the row
+     * would therefore mean the real conversion never deducts stock again.
+     */
+    public function revertToProcessing()
+    {
+        try {
+            $orderId    = request("order_id");
+            $invoice_id = request("invoice_id");
+
+            $this->recordLog("Revert to processing request received.");
+
+            $invoice = null;
+            if ($invoice_id) {
+                $invoice = Invoice::where("id", $invoice_id)->first();
+
+                if (! $invoice) {
+                    $this->recordLog("Invoice not found.");
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invoice not found.',
+                    ], 404);
+                }
+            }
+
+            $order = $invoice
+                ? $invoice->order
+                : ($orderId ? Order::where("order_id", $orderId)->first() : null);
+
+            if (! $order) {
+                $this->recordLog("Order not found.");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found.',
+                ], 404);
+            }
+
+            $invoiceToUndo = $invoice ?? $order->invoice;
+
+            // Money already taken against this invoice means this is no longer a
+            // simple mistake to undo — the payments have to be dealt with first.
+            if ($invoiceToUndo && $invoiceToUndo->payments()->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This invoice already has payments recorded. Remove those payments before moving the order back to processing.',
+                ], 422);
+            }
+
+            $restocked = 0;
+
+            DB::transaction(function () use ($order, $invoiceToUndo, &$restocked) {
+                if ($invoiceToUndo) {
+                    $restocked = app(\App\Services\StockSyncService::class)->reverseForInvoice($invoiceToUndo);
+                    $invoiceToUndo->delete();
+                }
+
+                $order->update(["order_status" => "processing"]);
+            });
+
+            $this->recordLog("Order moved back to processing.");
+
+            return response()->json([
+                'success'   => true,
+                'message'   => 'Order has been moved back to processing.',
+                'restocked' => $restocked,
+                'order'     => $order->fresh(),
+            ]);
+        } catch (\Exception $e) {
+            $this->recordLog("Error while reverting order to processing.");
 
             return response()->json([
                 'success' => false,

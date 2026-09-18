@@ -74,6 +74,7 @@ Route::get('lattest-order', [OrderController::class, "latestOrder"]);
 Route::post('order-creater-acknowledge', [OrderController::class, "orderCreateAcknowledge"]);
 Route::post('cancel-order', [OrderController::class, "cancelOrder"]);
 Route::post('return-order', [OrderController::class, "returnOrder"]);
+Route::post('revert-order-to-processing', [OrderController::class, "revertToProcessing"]);
 Route::get('status-list', [OrderController::class, "getStatusesDropdown"]);
 Route::get('order-qty-by-date', [OrderController::class, "orderQtyByDate"]);
 Route::get('order-sum-by-date', [OrderController::class, "orderSumByDate"]);
