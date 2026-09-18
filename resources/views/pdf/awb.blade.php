@@ -203,7 +203,12 @@
 
                     @foreach ($data['items'] as $item)
                     <tr>
-                        <td style="padding: 6px 4px;">{{ $item['item'] }}</td>
+                        <td style="padding: 6px 4px;">
+                            {{ $item['item'] }}
+                            @if (!empty($item['bundle_note']))
+                            <div style="font-size: 8pt; color: #555;">{{ $item['bundle_note'] }}</div>
+                            @endif
+                        </td>
                         <td style="text-align: right; padding: 6px 4px;">{{ $item['quantity'] }}</td>
                     </tr>
                     @endforeach
