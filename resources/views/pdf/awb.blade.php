@@ -203,14 +203,36 @@
 
                     @foreach ($data['items'] as $item)
                     <tr>
-                        <td style="padding: 6px 4px;">
-                            {{ $item['item'] }}
-                            @if (!empty($item['bundle_note']))
-                            <div style="font-size: 8pt; color: #555;">{{ $item['bundle_note'] }}</div>
-                            @endif
-                        </td>
+                        <td style="padding: 6px 4px;">{{ $item['item'] }}</td>
                         <td style="text-align: right; padding: 6px 4px;">{{ $item['quantity'] }}</td>
                     </tr>
+                    @php
+                        // bundle_note is a JSON [{name, qty}, ...] string (full catalog
+                        // names, duplicate picks collapsed into a quantity) recording
+                        // which products an "Any 3/4" bundle line resolved to. Print
+                        // each one as its own row so the packer can see exactly what to
+                        // pick. Older orders may still carry the flat short-label text
+                        // from before that format existed; show that as a plain note
+                        // instead of failing to decode it.
+                        $bundleGroups = null;
+                        if (!empty($item['bundle_note'])) {
+                            $decoded = json_decode($item['bundle_note'], true);
+                            $bundleGroups = is_array($decoded) ? $decoded : null;
+                        }
+                    @endphp
+                    @if ($bundleGroups)
+                        @foreach ($bundleGroups as $g)
+                        <tr>
+                            <td style="padding: 6px 4px;">{{ $g['name'] ?? '' }}</td>
+                            <td style="text-align: right; padding: 6px 4px;">{{ $g['qty'] ?? '' }}</td>
+                        </tr>
+                        @endforeach
+                    @elseif (!empty($item['bundle_note']))
+                        <tr>
+                            <td style="padding: 6px 4px; font-size: 8pt; color: #555;">{{ $item['bundle_note'] }}</td>
+                            <td style="text-align: right; padding: 6px 4px;"></td>
+                        </tr>
+                    @endif
                     @endforeach
                 </table>
             </td>
