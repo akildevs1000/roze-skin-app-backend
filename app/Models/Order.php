@@ -171,4 +171,13 @@ class Order extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
+
+    /**
+     * Line items for orders created before the `items` JSON snapshot existed.
+     * order_items is keyed on the marketplace order_id, not on orders.id.
+     */
+    public function legacyItems()
+    {
+        return $this->hasMany(OrderItem::class, 'order_id', 'order_id');
+    }
 }

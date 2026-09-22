@@ -14,6 +14,17 @@ class Authenticate extends Middleware
      */
     protected function redirectTo($request)
     {
+        // The ChatGPT API never redirects — it answers 401 (see
+        // App\Exceptions\Handler::unauthenticated). Returning early also
+        // avoids route('login') below, which throws RouteNotFoundException
+        // because this app has no such route.
+        //
+        // Scoped to that group on purpose: every other route keeps the
+        // behaviour it has always had.
+        if ($request->is('api/chatgpt/*')) {
+            return null;
+        }
+
         if (! $request->expectsJson()) {
             return route('login');
         }

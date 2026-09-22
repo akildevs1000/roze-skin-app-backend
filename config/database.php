@@ -81,6 +81,29 @@ return [
             ]
         ],
 
+        /*
+         * Read-only connection used ONLY by the ChatGPT integration.
+         *
+         * The Postgres role behind this connection is granted SELECT and
+         * nothing else (see database/readonly/chatgpt_reader.sql), so even a
+         * coding mistake physically cannot write to the database through it.
+         * Falls back to the normal DB_* host/port/database — only the
+         * credentials differ.
+         */
+        'pgsql_readonly' => [
+            'driver' => 'pgsql',
+            'host' => env('READONLY_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('READONLY_DB_PORT', env('DB_PORT', '5432')),
+            'database' => env('READONLY_DB_DATABASE', env('DB_DATABASE', 'forge')),
+            'username' => env('READONLY_DB_USERNAME', 'chatgpt_reader'),
+            'password' => env('READONLY_DB_PASSWORD', ''),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => 'prefer',
+        ],
+
         'second_pgsql' => [
             'driver' => 'pgsql',
             'url' => env('SECOND_DATABASE_URL'),

@@ -75,6 +75,21 @@ return [
             'level'  => 'info',
             'days'   => 90,
         ],
+        // Audit trail of API requests that arrive without a valid Sanctum
+        // token. Used to work out which routes are safe to lock down.
+        'api_audit'       => [
+            'driver' => 'daily',
+            'path'   => storage_path('logs/api_audit.log'),
+            'level'  => 'info',
+            'days'   => 30,
+        ],
+        // Every request the ChatGPT read-only integration makes.
+        'chatgpt'         => [
+            'driver' => 'daily',
+            'path'   => storage_path('logs/chatgpt.log'),
+            'level'  => 'info',
+            'days'   => 90,
+        ],
         'croncheck'       => [
             'driver' => 'single',
             'path'   => storage_path('logs/croncheck.log'),

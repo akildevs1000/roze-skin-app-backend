@@ -1,0 +1,206 @@
+openapi: 3.1.0
+info:
+  title: Roze Skin Invoice App — read-only
+  description: >
+    Read-only access to orders, customers and invoices in the Roze Skin
+    Invoice App. This API cannot create, change or delete anything: only GET
+    routes exist, and the credential behind it has SELECT permission on the
+    database only.
+
+    Customer phone numbers, emails and street addresses are masked unless the
+    token was issued with the `read-pii` ability.
+  version: "1.0.0"
+
+servers:
+  - url: https://backend.rozeskin.com/api/chatgpt
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  parameters:
+    from:
+      name: from
+      in: query
+      description: Start of the period, YYYY-MM-DD.
+      schema: { type: string, format: date }
+    to:
+      name: to
+      in: query
+      description: End of the period, YYYY-MM-DD (inclusive).
+      schema: { type: string, format: date }
+    perPage:
+      name: per_page
+      in: query
+      description: Results per page, 1–100. Defaults to 50.
+      schema: { type: integer, minimum: 1, maximum: 100 }
+
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      summary: List orders, newest first, with optional filters.
+      parameters:
+        - $ref: '#/components/parameters/from'
+        - $ref: '#/components/parameters/to'
+        - name: status
+          in: query
+          description: >
+            Order status. One of: processing, completed, pending, cancelled,
+            returned, failed.
+          schema: { type: string }
+        - name: delivery_status
+          in: query
+          schema: { type: string }
+        - name: channel
+          in: query
+          description: Sales channel, e.g. web.
+          schema: { type: string }
+        - name: customer_id
+          in: query
+          schema: { type: integer }
+        - name: has_tracking
+          in: query
+          description: >
+            true = only orders that have a tracking number;
+            false = only orders still missing one.
+          schema: { type: boolean }
+        - $ref: '#/components/parameters/perPage'
+      responses:
+        '200': { description: A page of orders. }
+
+  /orders/{reference}:
+    get:
+      operationId: getOrder
+      summary: One order in full, with line items, addresses, invoice and payments.
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          description: >
+            The marketplace order number (e.g. 61310) or an internal reference
+            (e.g. ORD-000123).
+          schema: { type: string }
+      responses:
+        '200': { description: The order. }
+        '404': { description: No order matches that reference. }
+
+  /customers:
+    get:
+      operationId: listCustomers
+      summary: List or search customers.
+      parameters:
+        - name: query
+          in: query
+          description: Match against name, phone, whatsapp or email.
+          schema: { type: string }
+        - $ref: '#/components/parameters/perPage'
+      responses:
+        '200': { description: A page of customers. }
+
+  /customers/{id}:
+    get:
+      operationId: getCustomer
+      summary: One customer.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: The customer. }
+        '404': { description: No such customer. }
+
+  /customers/{id}/orders:
+    get:
+      operationId: getCustomerOrders
+      summary: Every order placed by one customer, newest first.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - $ref: '#/components/parameters/perPage'
+      responses:
+        '200': { description: A page of that customer's orders. }
+
+  /customers/{id}/spend:
+    get:
+      operationId: getCustomerSpend
+      summary: >
+        How many orders a customer placed over a period and how much they
+        spent, totalled server-side.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - $ref: '#/components/parameters/from'
+        - $ref: '#/components/parameters/to'
+      responses:
+        '200': { description: Order count and value totals for the customer. }
+
+  /invoices:
+    get:
+      operationId: listInvoices
+      summary: List invoices.
+      parameters:
+        - name: status
+          in: query
+          description: 'One of: Paid, Unpaid, Cancelled, Returned.'
+          schema: { type: string }
+        - $ref: '#/components/parameters/from'
+        - $ref: '#/components/parameters/to'
+        - $ref: '#/components/parameters/perPage'
+      responses:
+        '200': { description: A page of invoices. }
+
+  /invoices/{reference}:
+    get:
+      operationId: getInvoice
+      summary: One invoice with its order.
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          description: Invoice reference, e.g. INV-006014.
+          schema: { type: string }
+      responses:
+        '200': { description: The invoice. }
+        '404': { description: No invoice matches that reference. }
+
+  /search:
+    get:
+      operationId: search
+      summary: >
+        Free-text lookup across customers, orders and invoices. Accepts a
+        name, phone number, email, order number, tracking number, or an
+        ORD-/INV- reference.
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema: { type: string, minLength: 2 }
+      responses:
+        '200': { description: Matching customers, orders and invoices. }
+
+  /reports/orders-summary:
+    get:
+      operationId: getOrdersSummary
+      summary: Order counts and values over a period, optionally grouped.
+      parameters:
+        - $ref: '#/components/parameters/from'
+        - $ref: '#/components/parameters/to'
+        - name: group_by
+          in: query
+          description: >
+            How to bucket the results. Defaults to status.
+          schema:
+            type: string
+            enum: [status, channel, delivery_service, business_source, day, month]
+      responses:
+        '200': { description: Totals and per-bucket breakdown. }

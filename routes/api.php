@@ -4,6 +4,7 @@ use App\Http\Controllers\AkilSecurity\CatalogCategoryController;
 use App\Http\Controllers\AkilSecurity\CatalogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BusinessSourceController;
+use App\Http\Controllers\ChatGpt\ReadOnlyController as ChatGptReadOnlyController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DeliveryServiceController;
@@ -182,3 +183,35 @@ Route::get('/test-mail', function() {
     });
     return 'Check your inbox/logs';
 });
+/*
+|--------------------------------------------------------------------------
+| ChatGPT read-only integration
+|--------------------------------------------------------------------------
+|
+| Deliberately GET-only. Four independent layers stop this from ever writing:
+|   1. only GET routes are registered here;
+|   2. `readonly` rejects anything that is not GET/HEAD;
+|   3. the Sanctum token carries the `read` ability and nothing else;
+|   4. `db.readonly` runs the whole request on a Postgres role with SELECT
+|      permission only (database/readonly/chatgpt_reader.sql).
+|
+| Customer contact details are masked unless the token also has `read-pii`.
+| Issue a token with:  php artisan chatgpt:token "ChatGPT Read Only"
+*/
+Route::prefix('chatgpt')
+    ->middleware(['force.json', 'auth:sanctum', 'abilities:read', 'readonly', 'db.readonly', 'chatgpt.log', 'throttle:60,1'])
+    ->group(function () {
+        Route::get('orders', [ChatGptReadOnlyController::class, 'orders']);
+        Route::get('orders/{reference}', [ChatGptReadOnlyController::class, 'order']);
+
+        Route::get('customers', [ChatGptReadOnlyController::class, 'customers']);
+        Route::get('customers/{id}', [ChatGptReadOnlyController::class, 'customer'])->whereNumber('id');
+        Route::get('customers/{id}/orders', [ChatGptReadOnlyController::class, 'customerOrders'])->whereNumber('id');
+        Route::get('customers/{id}/spend', [ChatGptReadOnlyController::class, 'customerSpend'])->whereNumber('id');
+
+        Route::get('invoices', [ChatGptReadOnlyController::class, 'invoices']);
+        Route::get('invoices/{reference}', [ChatGptReadOnlyController::class, 'invoice']);
+
+        Route::get('search', [ChatGptReadOnlyController::class, 'search']);
+        Route::get('reports/orders-summary', [ChatGptReadOnlyController::class, 'ordersSummary']);
+    });

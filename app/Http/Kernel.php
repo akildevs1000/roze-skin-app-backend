@@ -42,6 +42,8 @@ class Kernel extends HttpKernel
             // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             // 'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            // Audit only — records anonymous calls, never blocks them.
+            \App\Http\Middleware\LogAnonymousApiRequests::class,
         ],
     ];
 
@@ -64,5 +66,13 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'CheckToken' => \App\Http\Middleware\CheckToken::class,
+        // Sanctum token scopes — not registered by Laravel 9 out of the box.
+        'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
+        'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
+        // Hard GET/HEAD-only guard for the ChatGPT integration.
+        'readonly' => \App\Http\Middleware\EnforceReadOnly::class,
+        'force.json' => \App\Http\Middleware\ForceJsonRequest::class,
+        'db.readonly' => \App\Http\Middleware\UseReadOnlyConnection::class,
+        'chatgpt.log' => \App\Http\Middleware\LogChatGptRequest::class,
     ];
 }
