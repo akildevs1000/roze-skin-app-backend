@@ -48,7 +48,10 @@ class ValidationRequest extends FormRequest
             'username' => 'nullable|string',
             'email' => 'nullable|email',
             'order_id' => 'nullable|integer',
-            'order_status' => 'required',
+            // "sometimes" so editing an order can leave the status alone. The
+            // edit form has no status control, and echoing back the value it
+            // was opened with silently undid any status change made meanwhile.
+            'order_status' => 'sometimes|required',
             'currency' => 'required|string',
             'shipping_charges' => 'required|numeric',
             'discount' => 'nullable|numeric',
