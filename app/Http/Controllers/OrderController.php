@@ -639,7 +639,12 @@ class OrderController extends Controller
                     $invoiceToUndo->delete();
                 }
 
-                $order->update(["order_status" => "processing"]);
+                // Clear the cancel reason too: the order is live again, and a
+                // stale "refused" hanging off it misreads in every later view.
+                $order->update([
+                    "order_status"  => "processing",
+                    "cancel_reason" => null,
+                ]);
             });
 
             $this->recordLog("Order moved back to processing.");
