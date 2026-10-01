@@ -64,6 +64,7 @@ class MonthlySalesReportController extends Controller
             "gross"         => 0.0,
             "delivered"     => 0.0,
             "rto"           => 0.0,
+            "refunds"       => 0.0,
             "pending"       => 0.0,
             "cancelled"     => 0.0,
             "delivered_qty" => 0,
@@ -177,14 +178,48 @@ class MonthlySalesReportController extends Controller
             }
         }
 
+        // Refunds are recorded against real orders, so they can be attributed
+        // to the same channel the order was sold through.
+        $refundRows = DB::table("refunds as r")
+            ->join("orders as o", "o.id", "=", "r.order_id")
+            ->leftJoin("business_sources as bs", "bs.id", "=", "o.business_source_id")
+            ->selectRaw("COALESCE(bs.name, '') as source")
+            ->selectRaw("COALESCE(o.payment_method, '') as method")
+            ->selectRaw("COALESCE(SUM(r.refund_value), 0) as amount")
+            ->where("r.created_at", ">=", $start)
+            ->where("r.created_at", "<", $end)
+            ->groupBy("bs.name", "o.payment_method")
+            ->get();
+
+        $refunds = 0.0;
+
+        foreach ($refundRows as $r) {
+            $platformKey = strtolower(trim($r->source));
+            $label = isset(self::PLATFORMS[$platformKey])
+                ? self::PLATFORMS[$platformKey]
+                : $this->normaliseMethod($r->method);
+
+            if (! isset($channels[$label])) {
+                $channels[$label] = $this->emptyBucket($label);
+            }
+
+            $channels[$label]["refunds"] += (float) $r->amount;
+            $refunds += (float) $r->amount;
+        }
+
+        // A figure typed against the month before refunds were itemised.
+        $legacy = ReportRefund::where("period", $month)->first();
+        if ($legacy && (float) $legacy->amount > 0) {
+            $refunds += (float) $legacy->amount;
+        }
+
+        // Flattened only once every contributor has been folded in, so a channel
+        // that appears solely through a refund still lands in one row.
         $channels = array_values($channels);
 
         usort($channels, function ($a, $b) {
             return $b["gross"] <=> $a["gross"];
         });
-
-        $refundRow = ReportRefund::where("period", $month)->first();
-        $refunds   = $refundRow ? (float) $refundRow->amount : 0.0;
 
         $totals = [
             "gross"     => round(array_sum(array_column($channels, "gross")), 2),
@@ -199,7 +234,7 @@ class MonthlySalesReportController extends Controller
         $totals["net_revenue"] = round($totals["delivered"] - $refunds, 2);
 
         foreach ($channels as &$c) {
-            foreach (["gross", "delivered", "rto", "pending", "cancelled"] as $k) {
+            foreach (["gross", "delivered", "rto", "pending", "cancelled", "refunds"] as $k) {
                 $c[$k] = round($c[$k], 2);
             }
         }

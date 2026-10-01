@@ -76,6 +76,11 @@ Route::post('order-creater-acknowledge', [OrderController::class, "orderCreateAc
 Route::post('cancel-order', [OrderController::class, "cancelOrder"]);
 Route::post('return-order', [OrderController::class, "returnOrder"]);
 
+Route::get('refunds', [\App\Http\Controllers\RefundController::class, "index"]);
+Route::get('refunds/lookup', [\App\Http\Controllers\RefundController::class, "lookup"]);
+Route::post('refunds', [\App\Http\Controllers\RefundController::class, "store"]);
+Route::delete('refunds/{id}', [\App\Http\Controllers\RefundController::class, "destroy"]);
+
 Route::get('monthly-sales-report', [\App\Http\Controllers\MonthlySalesReportController::class, "index"]);
 Route::post('monthly-sales-report/refund', [\App\Http\Controllers\MonthlySalesReportController::class, "saveRefund"]);
 Route::post('revert-order-to-processing', [OrderController::class, "revertToProcessing"]);
