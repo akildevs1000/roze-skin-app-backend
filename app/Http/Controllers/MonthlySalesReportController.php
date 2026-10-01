@@ -83,17 +83,34 @@ class MonthlySalesReportController extends Controller
         $start = $month . "-01 00:00:00";
         $end   = date("Y-m-d 00:00:00", strtotime($month . "-01 +1 month"));
 
-        $rows = DB::table("orders as o")
+        // "order" counts what was sold this month; "collection" counts what was
+        // invoiced this month, which is the closest thing the system has to the
+        // date cash arrived. The two legitimately disagree: an order placed in
+        // one month and delivered in the next belongs to a different month in
+        // each view.
+        $basis = $request->query("basis") === "collection" ? "collection" : "order";
+
+        $query = DB::table("orders as o")
             ->leftJoin("business_sources as bs", "bs.id", "=", "o.business_source_id")
             ->selectRaw("COALESCE(bs.name, '') as source")
             ->selectRaw("COALESCE(o.payment_method, '') as method")
             ->selectRaw("COALESCE(o.order_status, '') as status")
             ->selectRaw("COUNT(*) as orders")
             ->selectRaw("COALESCE(SUM(o.total), 0) as amount")
-            ->where("o.created_at", ">=", $start)
-            ->where("o.created_at", "<", $end)
-            ->groupBy("bs.name", "o.payment_method", "o.order_status")
-            ->get();
+            ->groupBy("bs.name", "o.payment_method", "o.order_status");
+
+        if ($basis === "collection") {
+            // Orders with no invoice have collected nothing yet, so an inner
+            // join is the filter: they simply do not belong to any month here.
+            $query->join("invoices as i", "i.order_id", "=", "o.id")
+                ->where("i.converted_to_invoice_at", ">=", $start)
+                ->where("i.converted_to_invoice_at", "<", $end);
+        } else {
+            $query->where("o.created_at", ">=", $start)
+                ->where("o.created_at", "<", $end);
+        }
+
+        $rows = $query->get();
 
         $channels = [];
 
@@ -176,6 +193,7 @@ class MonthlySalesReportController extends Controller
 
         return response()->json([
             "month"       => $month,
+            "basis"       => $basis,
             "month_label" => date("F Y", strtotime($start)),
             "summary"     => $summary,
             "channels"    => $channels,
