@@ -261,7 +261,7 @@ class MonthlySalesReportController extends Controller
             "channels"    => $channels,
             "daily"       => $dailyRows,
             "totals"      => $totals,
-            "refund_note" => $refundRow ? $refundRow->note : null,
+            "refund_note" => $legacy ? $legacy->note : null,
         ]);
     }
 
