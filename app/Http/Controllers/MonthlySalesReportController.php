@@ -90,14 +90,17 @@ class MonthlySalesReportController extends Controller
         // each view.
         $basis = $request->query("basis") === "collection" ? "collection" : "order";
 
+        $dateCol = $basis === "collection" ? "i.converted_to_invoice_at" : "o.created_at";
+
         $query = DB::table("orders as o")
             ->leftJoin("business_sources as bs", "bs.id", "=", "o.business_source_id")
+            ->selectRaw("CAST({$dateCol} AS DATE) as day")
             ->selectRaw("COALESCE(bs.name, '') as source")
             ->selectRaw("COALESCE(o.payment_method, '') as method")
             ->selectRaw("COALESCE(o.order_status, '') as status")
             ->selectRaw("COUNT(*) as orders")
             ->selectRaw("COALESCE(SUM(o.total), 0) as amount")
-            ->groupBy("bs.name", "o.payment_method", "o.order_status");
+            ->groupByRaw("CAST({$dateCol} AS DATE), bs.name, o.payment_method, o.order_status");
 
         if ($basis === "collection") {
             // Orders with no invoice have collected nothing yet, so an inner
@@ -113,6 +116,7 @@ class MonthlySalesReportController extends Controller
         $rows = $query->get();
 
         $channels = [];
+        $daily    = [];
 
         $summary = [
             "orders"    => 0,
@@ -143,6 +147,16 @@ class MonthlySalesReportController extends Controller
             // out of gross entirely.
             if ($status !== "cancelled") {
                 $channels[$label]["gross"] += $amount;
+
+                // Day-by-day grid, laid out the way the month-end sheet is kept.
+                $day = substr((string) $r->day, 0, 10);
+                if (! isset($daily[$day])) {
+                    $daily[$day] = [];
+                }
+                if (! isset($daily[$day][$label])) {
+                    $daily[$day][$label] = 0.0;
+                }
+                $daily[$day][$label] += $amount;
             }
 
             if ($status === "completed") {
@@ -191,12 +205,26 @@ class MonthlySalesReportController extends Controller
         }
         unset($c);
 
+        ksort($daily);
+
+        $dailyRows = [];
+        foreach ($daily as $day => $byChannel) {
+            $row = ["date" => $day, "total" => 0.0];
+            foreach ($byChannel as $label => $amount) {
+                $row[$label] = round($amount, 2);
+                $row["total"] += $amount;
+            }
+            $row["total"] = round($row["total"], 2);
+            $dailyRows[] = $row;
+        }
+
         return response()->json([
             "month"       => $month,
             "basis"       => $basis,
             "month_label" => date("F Y", strtotime($start)),
             "summary"     => $summary,
             "channels"    => $channels,
+            "daily"       => $dailyRows,
             "totals"      => $totals,
             "refund_note" => $refundRow ? $refundRow->note : null,
         ]);
