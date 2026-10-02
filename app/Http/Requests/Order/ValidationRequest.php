@@ -47,7 +47,8 @@ class ValidationRequest extends FormRequest
             'user_id' => 'nullable|integer',
             'username' => 'nullable|string',
             'email' => 'nullable|email',
-            'order_id' => 'nullable|integer',
+            // The store's own order reference, which may contain letters.
+            'order_id' => 'nullable|string|max:50',
             // "sometimes" so editing an order can leave the status alone. The
             // edit form has no status control, and echoing back the value it
             // was opened with silently undid any status change made meanwhile.
