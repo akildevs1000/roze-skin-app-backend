@@ -17,6 +17,21 @@ class ValidationRequest extends FormRequest
     }
 
     /**
+     * The store reference may contain letters, so it is validated as a string.
+     * The website webhook sends it as a JSON number, which a "string" rule
+     * rejects outright - and because the caller does not ask for JSON, Laravel
+     * answers the failure with a redirect rather than an error, so the webhook
+     * logged it as a success and every website order was silently lost.
+     * Normalise the type before validation rather than loosening the rule.
+     */
+    protected function prepareForValidation()
+    {
+        if ($this->has('order_id') && $this->input('order_id') !== null) {
+            $this->merge(['order_id' => (string) $this->input('order_id')]);
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, mixed>
