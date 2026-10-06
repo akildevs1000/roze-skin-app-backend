@@ -75,14 +75,33 @@ class MonthlySalesReportController extends Controller
 
     public function index(Request $request)
     {
-        $month = $request->query("month");
+        // An explicit day range wins; a whole month is just the common case of
+        // one. "to" is inclusive of the day itself, hence the +1 day on the
+        // exclusive upper bound.
+        $from = $request->query("from");
+        $to   = $request->query("to");
 
-        if (! $month || ! preg_match('/^\d{4}-\d{2}$/', $month)) {
-            $month = date("Y-m");
+        $isDay = fn ($d) => $d && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d);
+
+        if ($isDay($from) && $isDay($to) && $from <= $to) {
+            $start = $from . " 00:00:00";
+            $end   = date("Y-m-d 00:00:00", strtotime($to . " +1 day"));
+            $month = substr($from, 0, 7);
+
+            $label = $from === $to
+                ? date("j F Y", strtotime($from))
+                : date("j M Y", strtotime($from)) . " to " . date("j M Y", strtotime($to));
+        } else {
+            $month = $request->query("month");
+
+            if (! $month || ! preg_match('/^\d{4}-\d{2}$/', $month)) {
+                $month = date("Y-m");
+            }
+
+            $start = $month . "-01 00:00:00";
+            $end   = date("Y-m-d 00:00:00", strtotime($month . "-01 +1 month"));
+            $label = date("F Y", strtotime($start));
         }
-
-        $start = $month . "-01 00:00:00";
-        $end   = date("Y-m-d 00:00:00", strtotime($month . "-01 +1 month"));
 
         // "order" counts what was sold this month; "collection" counts what was
         // invoiced this month, which is the closest thing the system has to the
@@ -256,7 +275,9 @@ class MonthlySalesReportController extends Controller
         return response()->json([
             "month"       => $month,
             "basis"       => $basis,
-            "month_label" => date("F Y", strtotime($start)),
+            "month_label" => $label,
+            "from"        => substr($start, 0, 10),
+            "to"          => date("Y-m-d", strtotime($end . " -1 day")),
             "summary"     => $summary,
             "channels"    => $channels,
             "daily"       => $dailyRows,
