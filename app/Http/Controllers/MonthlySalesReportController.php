@@ -88,7 +88,9 @@ class MonthlySalesReportController extends Controller
             $end   = date("Y-m-d 00:00:00", strtotime($to . " +1 day"));
             $month = substr($from, 0, 7);
 
-            $label = $from === $to
+            // Not $label: the channel loop below uses that name, and it would
+            // overwrite this before the response is built.
+            $rangeLabel = $from === $to
                 ? date("j F Y", strtotime($from))
                 : date("j M Y", strtotime($from)) . " to " . date("j M Y", strtotime($to));
         } else {
@@ -100,7 +102,7 @@ class MonthlySalesReportController extends Controller
 
             $start = $month . "-01 00:00:00";
             $end   = date("Y-m-d 00:00:00", strtotime($month . "-01 +1 month"));
-            $label = date("F Y", strtotime($start));
+            $rangeLabel = date("F Y", strtotime($start));
         }
 
         // "order" counts what was sold this month; "collection" counts what was
@@ -275,7 +277,7 @@ class MonthlySalesReportController extends Controller
         return response()->json([
             "month"       => $month,
             "basis"       => $basis,
-            "month_label" => $label,
+            "month_label" => $rangeLabel,
             "from"        => substr($start, 0, 10),
             "to"          => date("Y-m-d", strtotime($end . " -1 day")),
             "summary"     => $summary,
