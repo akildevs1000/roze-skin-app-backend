@@ -73,6 +73,7 @@ class WebsiteOrderAuditController extends Controller
                 continue;
             }
 
+            $row["candidates"] = $this->candidatesFor((string) $row["order_id"], $known);
             $missing[] = $row;
         }
 
@@ -191,13 +192,24 @@ class WebsiteOrderAuditController extends Controller
      */
     private function knownReferences()
     {
-        $refs = DB::table("orders")->whereNotNull("order_id")->pluck("order_id");
+        $rows = DB::table("orders as o")
+            ->leftJoin("customers as c", "c.id", "=", "o.customer_id")
+            ->whereNotNull("o.order_id")
+            ->get([
+                "o.order_id",
+                "o.total",
+                "o.order_status",
+                "o.created_at",
+                "c.first_name",
+                "c.last_name",
+                "c.phone",
+            ]);
 
         $exact   = [];
         $endings = [];
 
-        foreach ($refs as $ref) {
-            $ref = (string) $ref;
+        foreach ($rows as $r) {
+            $ref = (string) $r->order_id;
 
             if ($ref === "") {
                 continue;
@@ -205,27 +217,42 @@ class WebsiteOrderAuditController extends Controller
 
             $exact[$ref] = true;
 
-            // An order typed in by hand during an outage carries a prefix:
-            // 1000061412 is order 61412. Index the tails so those count as
-            // present instead of being re-reported every time this is run.
+            // An order typed in by hand during an outage sometimes carries a
+            // prefix - 1000060994 is website order 60994. Those tails are only
+            // ever a *suggestion*: a five-digit tail collides easily, and four
+            // of them turned out to be unrelated phone orders belonging to
+            // different customers. Recorded as candidates for a human to judge,
+            // never as proof the order arrived.
             $len = strlen($ref);
 
             for ($take = 4; $take < $len; $take++) {
-                $endings[$take][substr($ref, -$take)] = true;
+                $endings[$take][substr($ref, -$take)][] = [
+                    "order_id" => $ref,
+                    "total"    => round((float) $r->total, 2),
+                    "status"   => (string) $r->order_status,
+                    "customer" => trim(($r->first_name ?? "") . " " . ($r->last_name ?? "")),
+                    "phone"    => (string) ($r->phone ?? ""),
+                    "date"     => (string) $r->created_at,
+                ];
             }
         }
 
         return ["exact" => $exact, "endings" => $endings];
     }
 
+    /**
+     * Present means the reference is here, exactly. Nothing looser: a false
+     * "received" is the worst answer this can give, because it retires the
+     * question and the sale is never entered.
+     */
     private function isPresent($orderId, array $known)
     {
-        if (isset($known["exact"][$orderId])) {
-            return true;
-        }
+        return isset($known["exact"][$orderId]);
+    }
 
-        $len = strlen($orderId);
-
-        return isset($known["endings"][$len][$orderId]);
+    /** App orders whose reference merely ends with this one. Needs a human. */
+    private function candidatesFor($orderId, array $known)
+    {
+        return $known["endings"][strlen($orderId)][$orderId] ?? [];
     }
 }
