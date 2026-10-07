@@ -76,6 +76,15 @@ class WebsiteOrderAuditController extends Controller
             $missing[] = $row;
         }
 
+        // Only the ones actually absent. A cancelled order that is sitting in
+        // this app anyway - cancelled here first, or keyed in by hand - would
+        // otherwise be listed under "never sent", which reads as a second
+        // problem when there is none.
+        $notSent = array_values(array_filter(
+            $website["not_sent"],
+            fn ($row) => ! $this->isPresent((string) $row["order_id"], $known)
+        ));
+
         return response()->json([
             "from"    => $from,
             "to"      => $to,
@@ -84,10 +93,10 @@ class WebsiteOrderAuditController extends Controller
                 "sent_by_store"  => count($website["sent"]),
                 "received"       => $matched,
                 "missing"        => count($missing),
-                "not_sent"       => count($website["not_sent"]),
+                "not_sent"       => count($notSent),
             ],
             "missing"  => $missing,
-            "not_sent" => $website["not_sent"],
+            "not_sent" => $notSent,
         ]);
     }
 
@@ -101,7 +110,7 @@ class WebsiteOrderAuditController extends Controller
         $db     = DB::connection("wordpress");
 
         $rows = $db->table("{$prefix}wc_orders as o")
-            ->leftJoin("{$prefix}wc_order_addresses as a", function ($join) use ($prefix) {
+            ->leftJoin("{$prefix}wc_order_addresses as a", function ($join) {
                 $join->on("a.order_id", "=", "o.id")->where("a.address_type", "=", "billing");
             })
             ->where("o.type", "shop_order")
