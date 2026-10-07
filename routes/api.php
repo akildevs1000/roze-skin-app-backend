@@ -83,6 +83,8 @@ Route::delete('refunds/{id}', [\App\Http\Controllers\RefundController::class, "d
 
 Route::get('customer-product-report', [\App\Http\Controllers\CustomerProductReportController::class, "index"]);
 
+Route::get('website-order-audit', [\App\Http\Controllers\WebsiteOrderAuditController::class, "index"]);
+
 Route::get('monthly-sales-report', [\App\Http\Controllers\MonthlySalesReportController::class, "index"]);
 Route::post('monthly-sales-report/refund', [\App\Http\Controllers\MonthlySalesReportController::class, "saveRefund"]);
 Route::post('revert-order-to-processing', [OrderController::class, "revertToProcessing"]);

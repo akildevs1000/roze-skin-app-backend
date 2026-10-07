@@ -104,6 +104,34 @@ return [
             'sslmode' => 'prefer',
         ],
 
+        /*
+         * The WordPress store's own database, on the same server as this API.
+         *
+         * Read-only in practice: the single feature that uses it compares what
+         * the store holds against what arrived here, and never writes. Absent
+         * credentials are fine - locally there is no store to read, and the
+         * audit endpoint reports that rather than pretending nothing is wrong.
+         */
+        'wordpress' => [
+            'driver' => 'mysql',
+            'host' => env('WP_DB_HOST', '127.0.0.1'),
+            'port' => env('WP_DB_PORT', '3306'),
+            'database' => env('WP_DB_DATABASE', ''),
+            'username' => env('WP_DB_USERNAME', ''),
+            'password' => env('WP_DB_PASSWORD', ''),
+            'unix_socket' => env('WP_DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => false,
+            'engine' => null,
+            // Not Laravel's 'prefix': that would be applied to every table name
+            // automatically, including in raw expressions. WordPress's prefix is
+            // part of the table name here, so it is passed explicitly instead.
+            'wp_prefix' => env('WP_DB_PREFIX', 'wp_'),
+        ],
+
         'second_pgsql' => [
             'driver' => 'pgsql',
             'url' => env('SECOND_DATABASE_URL'),
