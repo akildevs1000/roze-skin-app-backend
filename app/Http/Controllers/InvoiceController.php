@@ -100,33 +100,25 @@ class InvoiceController extends Controller
     public function stats()
     {
         $now          = Carbon::now();
-        $today        = $now->toDateString();
         $currentMonth = $now->month;
 
-        // Last month stats (cached)
+        // Last month stats (cached). The key is versioned because the cached
+        // value used to carry an income figure as well: a day-old entry of the
+        // old shape would otherwise keep that number alive after this change.
         $lastMonthStats = Cache::remember(
-            'invoice_stats_last_month',
+            'invoice_stats_last_month_v2',
             now()->addDay(),
             function () use ($now) {
                 $lastMonth = $now->copy()->subMonth()->month;
 
                 return [
                     'invoices' => Invoice::whereMonth('created_at', $lastMonth)->count(),
-                    'income'   => Order::whereHas('invoice')
-                        ->whereMonth('created_at', $lastMonth)
-                        ->sum('total'),
                 ];
             }
         );
 
         // Current month
         $ordersThisMonth = Invoice::whereMonth('created_at', $currentMonth)->count();
-        $incomeThisMonth = Order::whereHas('invoice')
-            ->whereMonth('created_at', $currentMonth)
-            ->sum('total');
-
-        // Daily income (today)
-        $dailyIncome = Order::whereDate('created_at', $today)->sum('total');
 
         $totalOrders = Invoice::count();
 
@@ -143,18 +135,10 @@ class InvoiceController extends Controller
                 'value' => $totalOrders,
                 'color' => 'indigo',
             ],
-            [
-                'label' => 'Last Month / Current Month (Income)',
-                'icon'  => 'mdi-currency-usd',
-                'value' => "{$lastMonthStats['income']} / $incomeThisMonth",
-                'color' => 'green',
-            ],
-            [
-                'label' => 'Today Income',
-                'icon'  => 'mdi-cash',
-                'value' => $dailyIncome,
-                'color' => 'teal',
-            ],
+            // The two income cards were removed on request. Dropped from the
+            // response rather than hidden in the page, so the figures are not
+            // sitting in the browser's network tab for anyone looking over a
+            // shoulder - which is the usual reason for taking them off screen.
         ];
     }
 
