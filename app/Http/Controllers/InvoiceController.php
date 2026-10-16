@@ -30,6 +30,11 @@ class InvoiceController extends Controller
 
         $status = request('status');
 
+        // The invoice's own status is Paid / Unpaid / Cancelled. This is the
+        // order's progress - processing, completed, cancelled, returned -
+        // which is what people mean when they ask for "completed invoices".
+        $order_status = request('order_status');
+
         $payment_method = request('payment_method');
 
         $customer_id = request('customer_id');
@@ -81,6 +86,12 @@ class InvoiceController extends Controller
             ->when($payment_method, function ($q) use ($payment_method) {
                 $q->whereHas('order', function ($q) use ($payment_method) {
                     $q->where('payment_method', $payment_method);
+                });
+            })
+
+            ->when($order_status, function ($q) use ($order_status) {
+                $q->whereHas('order', function ($q) use ($order_status) {
+                    $q->where('order_status', $order_status);
                 });
             })
 
