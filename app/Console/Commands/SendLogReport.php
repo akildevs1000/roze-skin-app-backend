@@ -17,18 +17,33 @@ class SendLogReport extends Command
      */
     private const MAX_ATTACH_BYTES = 1048576; // 1 MB
 
+    /** Ceiling for the message as a whole; mail servers reject large ones. */
+    private const MAX_TOTAL_BYTES = 5242880; // 5 MB
+
+    /** A daily report covers the day. The directory holds months of files. */
+    private const WINDOW_HOURS = 24;
+
     public function handle()
     {
-        $files = glob(storage_path('logs') . '/*.log');
+        $cutoff = time() - (self::WINDOW_HOURS * 3600);
+
+        // Only what changed today. Reporting on all 310 files in the folder
+        // meant 25 MB of attachments on a single message, which is beyond what
+        // the mail server accepts - the report failed for that reason alone.
+        $files = array_values(array_filter(
+            glob(storage_path('logs') . '/*.log') ?: [],
+            fn ($f) => filemtime($f) >= $cutoff
+        ));
 
         if (! $files) {
-            $this->info('No log files found.');
+            $this->info('No log files written in the last ' . self::WINDOW_HOURS . ' hours.');
 
             return;
         }
 
         $logSummaries = [];
         $attach       = [];
+        $running      = 0;
 
         foreach ($files as $file) {
             $size = filesize($file) ?: 0;
@@ -39,24 +54,30 @@ class SendLogReport extends Command
             // all of it was serialised into the job, and every time the send
             // failed the whole lot was written to failed_jobs. That table had
             // reached 24 GB by 16 Oct 2026 and nearly filled the disk.
+            $fits = $size <= self::MAX_ATTACH_BYTES
+                && ($running + $size) <= self::MAX_TOTAL_BYTES;
+
             $logSummaries[] = [
                 'filename' => basename($file),
                 'size'     => $size,
-                'attached' => $size <= self::MAX_ATTACH_BYTES,
+                'attached' => $fits,
                 'path'     => $file,
             ];
 
-            if ($size <= self::MAX_ATTACH_BYTES) {
-                $attach[] = $file;
+            if ($fits) {
+                $attach[]  = $file;
+                $running  += $size;
             }
         }
 
         SendLogEmailAndDelete::dispatch($logSummaries, 'francisgill1000@gmail.com', $attach);
 
         $this->info(sprintf(
-            'Log report dispatched: %d file(s), %d attached, %d too large.',
+            'Log report dispatched: %d file(s) from the last %dh, %d attached (%.2f MB), %d skipped.',
             count($logSummaries),
+            self::WINDOW_HOURS,
             count($attach),
+            $running / 1048576,
             count($logSummaries) - count($attach)
         ));
     }
