@@ -119,10 +119,20 @@ return [
             'level'  => env('LOG_LEVEL', 'debug'),
         ],
 
+        /*
+         * The application's main log, used by the 'stack' default.
+         *
+         * Named 'single' for history but rotated daily: as a true single file
+         * it never stopped growing - laravel.log had reached 17 MB and the
+         * whole logs directory 156 MB, all of which the nightly log report
+         * loaded into a queued job. Fourteen days is plenty to investigate
+         * anything that gets reported.
+         */
         'single'          => [
-            'driver' => 'single',
+            'driver' => 'daily',
             'path'   => storage_path('logs/laravel.log'),
             'level'  => env('LOG_LEVEL', 'debug'),
+            'days'   => 14,
         ],
 
         'daily'           => [

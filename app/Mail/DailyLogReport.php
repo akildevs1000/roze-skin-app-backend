@@ -24,8 +24,15 @@ class DailyLogReport extends Mailable implements ShouldQueue
             ->view('emails.daily-log-report')
             ->with(['logSummaries' => $this->logSummaries]);
 
-        // Optional: attach log files
+        // Only the files the command marked small enough. Attaching everything
+        // built a message far too large for the mail server to accept, and the
+        // rejected job - attachments included - was then stored in the
+        // database. See the note in SendLogReport.
         foreach ($this->logSummaries as $log) {
+            if (empty($log['attached']) || empty($log['path'])) {
+                continue;
+            }
+
             if (file_exists($log['path'])) {
                 $email->attach($log['path']);
             }
