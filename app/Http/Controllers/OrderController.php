@@ -149,7 +149,9 @@ class OrderController extends Controller
             })
 
             ->when($payment_method, function ($q) use ($payment_method) {
-                $q->where('payment_method', $payment_method);
+                // Not a plain equals: the dropdown offers "Tamara" while the
+                // orders say "tamara-gateway-checkout". See App\Support\PaymentMethod.
+                $q->whereIn('payment_method', \App\Support\PaymentMethod::variants($payment_method));
             })
 
             ->when(! $search, function ($q) use ($dates) {

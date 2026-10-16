@@ -85,7 +85,8 @@ class InvoiceController extends Controller
 
             ->when($payment_method, function ($q) use ($payment_method) {
                 $q->whereHas('order', function ($q) use ($payment_method) {
-                    $q->where('payment_method', $payment_method);
+                    // See App\Support\PaymentMethod - the stored spellings vary.
+                    $q->whereIn('payment_method', \App\Support\PaymentMethod::variants($payment_method));
                 });
             })
 
