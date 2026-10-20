@@ -234,6 +234,22 @@ class MonthlySalesReportController extends Controller
             $refunds += (float) $legacy->amount;
         }
 
+        // The sales platforms always get a row, traded or not.
+        //
+        // Columns were built only from what sold, so a platform with a quiet
+        // month simply vanished from the report - Trendyol was missing from
+        // October for that reason. A column of zeros says "nothing sold here";
+        // a missing column says nothing at all, and invites the reader to
+        // assume the platform was never part of the figures.
+        //
+        // Only the platforms, deliberately: seeding every payment method the
+        // shop has ever used would fill the grid with columns nobody needs.
+        foreach (self::PLATFORMS as $platform) {
+            if (! isset($channels[$platform])) {
+                $channels[$platform] = $this->emptyBucket($platform);
+            }
+        }
+
         // Flattened only once every contributor has been folded in, so a channel
         // that appears solely through a refund still lands in one row.
         $channels = array_values($channels);
