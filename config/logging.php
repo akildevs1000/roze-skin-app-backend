@@ -53,24 +53,28 @@ return [
     'channels'     => [
         'orders'          => [
             'driver' => 'daily',
+            'permission' => 0664,
             'path'   => storage_path('logs/orders.log'),
             'level'  => 'info',
             'days'   => 90,
         ],
         'order_cancel'    => [
             'driver' => 'daily',
+            'permission' => 0664,
             'path'   => storage_path('logs/order_cancel.log'),
             'level'  => 'info',
             'days'   => 90, // keep logs for 30 days (1 month rotation)
         ],
         'order_emx'    => [
             'driver' => 'daily',
+            'permission' => 0664,
             'path'   => storage_path('logs/order_emx.log'),
             'level'  => 'info',
             'days'   => 90, // keep logs for 30 days (1 month rotation)
         ],
         'health'          => [
             'driver' => 'daily',
+            'permission' => 0664,
             'path'   => storage_path('logs/health.log'),
             'level'  => 'info',
             'days'   => 90,
@@ -79,6 +83,7 @@ return [
         // token. Used to work out which routes are safe to lock down.
         'api_audit'       => [
             'driver' => 'daily',
+            'permission' => 0664,
             'path'   => storage_path('logs/api_audit.log'),
             'level'  => 'info',
             'days'   => 30,
@@ -86,18 +91,21 @@ return [
         // Every request the ChatGPT read-only integration makes.
         'chatgpt'         => [
             'driver' => 'daily',
+            'permission' => 0664,
             'path'   => storage_path('logs/chatgpt.log'),
             'level'  => 'info',
             'days'   => 90,
         ],
         'croncheck'       => [
             'driver' => 'single',
+            'permission' => 0664,
             'path'   => storage_path('logs/croncheck.log'),
             'level'  => 'info',
         ],
 
         'track_shipments' => [
             'driver' => 'single',
+            'permission' => 0664,
             'path'   => storage_path('logs/track_shipments.log'),
             'level'  => 'info',
         ],
@@ -109,12 +117,14 @@ return [
 
         'custom'          => [
             'driver' => 'single',
+            'permission' => 0664,
             'path'   => storage_path('logs/custom.log'),
             'level'  => env('LOG_LEVEL', 'debug'),
         ],
 
         'whatsapp_logs'   => [
             'driver' => 'single',
+            'permission' => 0664,
             'path'   => storage_path('logs/whatsapp_logs.log'),
             'level'  => env('LOG_LEVEL', 'debug'),
         ],
@@ -128,8 +138,24 @@ return [
          * loaded into a queued job. Fourteen days is plenty to investigate
          * anything that gets reported.
          */
+        /*
+         * 0664 on every file channel, not Laravel's default 0644.
+         *
+         * Two things write these logs: the web server as www-data, and the
+         * scheduler, which PM2 runs as root. With a daily file, whichever one
+         * writes the day's first line owns it, and the other cannot write for
+         * the rest of the day. On 30 October the 04:28 scheduler won the race
+         * before any web traffic arrived, and every attempt to convert an
+         * order to an invoice failed for the rest of the morning - the log
+         * write threw, the transaction rolled back, and the screen said only
+         * "An error occurred while storing the invoice."
+         *
+         * Group-writable, plus setgid on storage/logs so new files inherit the
+         * www-data group, means either process can always write.
+         */
         'single'          => [
             'driver' => 'daily',
+            'permission' => 0664,
             'path'   => storage_path('logs/laravel.log'),
             'level'  => env('LOG_LEVEL', 'debug'),
             'days'   => 14,
@@ -137,6 +163,7 @@ return [
 
         'daily'           => [
             'driver' => 'daily',
+            'permission' => 0664,
             'path'   => storage_path('logs/laravel.log'),
             'level'  => env('LOG_LEVEL', 'debug'),
             'days'   => 14,
