@@ -102,6 +102,8 @@ class WpProductMapController extends Controller
             ->where('skip_stock', false)
             ->get();
 
+        $names = $this->catalogNames($maps);
+
         $result = [];
         foreach ($maps as $map) {
             if ($map->items->count() < 2) {
@@ -110,7 +112,8 @@ class WpProductMapController extends Controller
 
             $result[(string) $map->wp_product_id] = $map->items
                 ->map(fn ($i) => [
-                    'name' => optional($i->inventoryItem)->name,
+                    'name' => $names[(int) $i->inventory_item_id]
+                        ?? optional($i->inventoryItem)->name,
                     'qty'  => (int) $i->qty,
                 ])
                 ->filter(fn ($i) => ! empty($i['name']))
@@ -118,6 +121,60 @@ class WpProductMapController extends Controller
         }
 
         return $result;
+    }
+
+    /**
+     * The full product name to print for each inventory item.
+     *
+     * Stock items are named for the people picking them - "Rice cleanser",
+     * "7 Days glow serum". On an invoice a customer keeps, those read as
+     * something other than what was bought, and they did not match the
+     * Any 3 / Any 4 lines on the same page, which print the full catalog name.
+     *
+     * An item earns its name from the map that points at it alone: a map with
+     * one component IS that product, so whatever that product is called is
+     * what the item should be called.
+     *
+     * The app's own catalog is preferred over the name stored on the map,
+     * because the map keeps a snapshot from whenever it was last saved and
+     * those drift - it still held "Botonical" for the hair serum and an old
+     * title for the body lotion. Where there is no catalog row the stored name
+     * is used, and failing that the stock name, so every component is always
+     * named something.
+     *
+     * @param  \Illuminate\Support\Collection<int,WpProductMap>  $maps
+     * @return array<int,string>
+     */
+    private function catalogNames($maps): array
+    {
+        $singles = $maps->filter(fn ($m) => $m->items->count() === 1);
+        if ($singles->isEmpty()) {
+            return [];
+        }
+
+        $catalog = DB::table('products')
+            ->whereIn('id', $singles->pluck('wp_product_id')->filter(fn ($id) => ctype_digit((string) $id))->all())
+            ->pluck('name', 'id');
+
+        $names = [];
+        foreach ($singles as $map) {
+            $itemId = (int) $map->items->first()->inventory_item_id;
+
+            $name = $catalog[(int) $map->wp_product_id] ?? null;
+            if (empty($name)) {
+                $name = $map->wp_name;
+            }
+            if (empty($name)) {
+                continue;
+            }
+
+            // A catalog name beats a stored one, and anything beats nothing.
+            if (! isset($names[$itemId]) || isset($catalog[(int) $map->wp_product_id])) {
+                $names[$itemId] = trim($name);
+            }
+        }
+
+        return $names;
     }
 
     /** Create or replace the mapping for one WordPress product. */
