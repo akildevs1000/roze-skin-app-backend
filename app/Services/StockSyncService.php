@@ -77,6 +77,26 @@ class StockSyncService
         // order, resolved to inventory components. See resolveBundleChoices().
         $chosen = $this->resolveBundleChoices($items);
 
+        /*
+         * Names picked inside a bundle on this order. A handful of orders
+         * carry the same product BOTH as a bundle choice and as its own
+         * zero-priced line - the same item written down twice - and deducting
+         * from both would take two off the shelf for one sold.
+         *
+         * Only the free-of-charge twin is dropped. Buying a cream inside the
+         * bundle and another at full price alongside it is a real second
+         * cream, and both come off.
+         */
+        $pickedNames = [];
+        foreach ($items as $line) {
+            if (! is_array($line)) {
+                continue;
+            }
+            foreach ($this->bundleChoices($line) as $pick) {
+                $pickedNames[$pick['name']] = true;
+            }
+        }
+
         foreach ($items as $line) {
             $productId = isset($line['product_id']) ? (string) $line['product_id'] : '';
             $orderedQty = (int) ($line['quantity'] ?? 0);
@@ -130,6 +150,13 @@ class StockSyncService
                     }
                 }
 
+                continue;
+            }
+
+            // The free twin of something already deducted as a bundle choice.
+            if ($pickedNames
+                && isset($pickedNames[trim((string) ($line['item'] ?? ''))])
+                && (float) ($line['rate'] ?? 0) == 0.0) {
                 continue;
             }
 
