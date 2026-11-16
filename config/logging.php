@@ -109,10 +109,26 @@ return [
             'path'   => storage_path('logs/track_shipments.log'),
             'level'  => 'info',
         ],
+        /*
+         * ignore_exceptions was false, which means a failure to WRITE a log
+         * line was re-thrown into whatever was running.
+         *
+         * On 16 Nov 2026 that took the API down for convert-to-invoice: the
+         * queue worker runs as root under PM2 and created that day's
+         * laravel-*.log as root with mode 0644, so php-fpm (www-data) could
+         * not append to it. Any controller that called Log::error() then threw
+         * a second exception from inside its own error handler, which escaped
+         * the middleware stack - so the 500 came back with no CORS headers and
+         * the browser reported it as "Network Error" with nothing in the logs
+         * to explain it.
+         *
+         * Not being able to write a log line is a problem worth fixing, but it
+         * is never a reason to fail the request that was being logged.
+         */
         'stack'           => [
             'driver'            => 'stack',
             'channels'          => ['single'],
-            'ignore_exceptions' => false,
+            'ignore_exceptions' => true,
         ],
 
         'custom'          => [
