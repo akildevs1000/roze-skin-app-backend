@@ -77,6 +77,49 @@ class WpProductMapController extends Controller
         return $result;
     }
 
+    /**
+     * What each fixed bundle contains, for printing underneath its line on an
+     * invoice: wp_product_id => [['name' => ..., 'qty' => ...], ...].
+     *
+     * The pick-your-own bundles (Any 3, Any 4) already carry their contents on
+     * the order line as bundle_note, because what is inside them differs per
+     * order. A fixed bundle - Glow Routine, Combo Pack, Trio Pack and the rest
+     * - contains the same things every time, so nothing was ever written down
+     * and the invoice printed one line with no way for a packer to know what
+     * goes in the box.
+     *
+     * It is read from the stock mapping rather than a second list of its own.
+     * That mapping already has to be right or stock does not deduct, so this
+     * cannot quietly drift out of step with what is actually shipped.
+     *
+     * Only maps with two or more components are returned: a one-to-one map is
+     * an ordinary product, not a bundle, and listing its single component
+     * under itself would just repeat the line above.
+     */
+    public function contents()
+    {
+        $maps = WpProductMap::with('items.inventoryItem:id,name')
+            ->where('skip_stock', false)
+            ->get();
+
+        $result = [];
+        foreach ($maps as $map) {
+            if ($map->items->count() < 2) {
+                continue;
+            }
+
+            $result[(string) $map->wp_product_id] = $map->items
+                ->map(fn ($i) => [
+                    'name' => optional($i->inventoryItem)->name,
+                    'qty'  => (int) $i->qty,
+                ])
+                ->filter(fn ($i) => ! empty($i['name']))
+                ->values();
+        }
+
+        return $result;
+    }
+
     /** Create or replace the mapping for one WordPress product. */
     public function store(Request $request)
     {

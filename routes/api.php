@@ -187,6 +187,8 @@ Route::get('inventory-dashboard-recent', [\App\Http\Controllers\Inventory\Invent
 Route::get('wp-product-map-products', [\App\Http\Controllers\Inventory\WpProductMapController::class, "products"]);
 Route::post('wp-product-map', [\App\Http\Controllers\Inventory\WpProductMapController::class, "store"]);
 Route::delete('wp-product-map/{id}', [\App\Http\Controllers\Inventory\WpProductMapController::class, "destroy"]);
+// What each fixed bundle contains, for listing under its line on an invoice.
+Route::get('bundle-contents-list', [\App\Http\Controllers\Inventory\WpProductMapController::class, "contents"]);
 
 // In routes/web.php
 Route::get('/test-mail', function() {
