@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Invoice;
+use App\Models\Product;
 use App\Models\Setting;
 use App\Models\StockLedger;
 use App\Models\WpProductMap;
@@ -72,11 +73,63 @@ class StockSyncService
             ->get()
             ->keyBy('wp_product_id');
 
+        // What the customer picked inside any pick-your-own bundle on this
+        // order, resolved to inventory components. See resolveBundleChoices().
+        $chosen = $this->resolveBundleChoices($items);
+
         foreach ($items as $line) {
             $productId = isset($line['product_id']) ? (string) $line['product_id'] : '';
             $orderedQty = (int) ($line['quantity'] ?? 0);
 
             if ($productId === '' || $orderedQty <= 0) {
+                continue;
+            }
+
+            /*
+             * A pick-your-own bundle (Any 3, Any 4) typed into the app arrives
+             * as ONE line, with the chosen products recorded only in
+             * bundle_note - they never become order lines of their own the way
+             * they do on a website order. The bundle parent itself is either
+             * unmapped (Any 4) or marked skip_stock (Any 3), so until now
+             * these orders deducted nothing whatsoever: 63 invoices and 234
+             * units left the warehouse without ever coming off the system.
+             *
+             * When a line carries choices, they are what actually ships, so
+             * they are what gets deducted - and the parent's own mapping is
+             * skipped so nothing can be counted twice.
+             */
+            $picks = $this->bundleChoices($line);
+            if ($picks) {
+                foreach ($picks as $pick) {
+                    $components = $chosen[$pick['name']] ?? null;
+
+                    if (! $components) {
+                        $result['unmapped'][] = [
+                            'product_id' => $productId . ' (chosen: ' . $pick['name'] . ')',
+                            'name'       => $pick['name'],
+                            'quantity'   => $pick['qty'] * $orderedQty,
+                        ];
+                        continue;
+                    }
+
+                    foreach ($components as $inventoryItemId => $perUnit) {
+                        $this->stock->decrease(
+                            $inventoryItemId,
+                            $orderedQty * $pick['qty'] * $perUnit,
+                            StockLedger::SALE,
+                            StockLedger::BUCKET_SELLABLE,
+                            [
+                                'source_type'    => self::SOURCE_TYPE,
+                                'source_id'      => $invoice->id,
+                                'reference'      => $invoice->reference_id ?? null,
+                                'customer_name'  => optional($order->customer)->full_name,
+                                'allow_negative' => true,
+                            ]
+                        );
+                        $result['deducted']++;
+                    }
+                }
+
                 continue;
             }
 
@@ -119,6 +172,118 @@ class StockSyncService
         }
 
         return $result;
+    }
+
+    /**
+     * The products chosen inside one pick-your-own bundle line.
+     *
+     * bundle_note is normally a JSON [{name, qty}, ...]. Orders placed before
+     * that format existed carry a flat comma-separated list of short labels
+     * instead; those cannot be resolved to catalog products reliably, so they
+     * are ignored here and the line falls through to its own mapping (which
+     * reports it as unmapped) rather than being silently half-deducted.
+     *
+     * @return array<int,array{name:string,qty:int}>
+     */
+    private function bundleChoices(array $line): array
+    {
+        $note = $line['bundle_note'] ?? null;
+
+        if (! is_string($note) || trim($note) === '' || ! str_starts_with(trim($note), '[')) {
+            return [];
+        }
+
+        $decoded = json_decode($note, true);
+        if (! is_array($decoded)) {
+            return [];
+        }
+
+        $picks = [];
+        foreach ($decoded as $entry) {
+            $name = is_array($entry) ? trim((string) ($entry['name'] ?? '')) : '';
+            $qty  = is_array($entry) ? (int) ($entry['qty'] ?? 1) : 0;
+
+            if ($name !== '' && $qty > 0) {
+                $picks[] = ['name' => $name, 'qty' => $qty];
+            }
+        }
+
+        return $picks;
+    }
+
+    /**
+     * Turn the chosen product NAMES on an order's bundle lines into inventory
+     * components: name => [inventory_item_id => qty per unit].
+     *
+     * The choices are stored by name because that is what the picker shows.
+     * Names resolve through the app's own catalog (products.name -> products.id)
+     * and from there through the same wp_product_maps table everything else
+     * uses, so a bundle choice deducts exactly what that product deducts when
+     * sold on its own.
+     *
+     * A name that matches several catalog rows is only used when they all
+     * deduct the same thing - two rows for the same cream is fine, two rows
+     * meaning different products is not, and guessing would quietly corrupt
+     * stock. Anything unresolved is reported to the caller instead.
+     *
+     * @param  array<int,mixed>  $items
+     * @return array<string,array<int,int>>
+     */
+    private function resolveBundleChoices(array $items): array
+    {
+        $names = [];
+        foreach ($items as $line) {
+            if (! is_array($line)) {
+                continue;
+            }
+            foreach ($this->bundleChoices($line) as $pick) {
+                $names[$pick['name']] = true;
+            }
+        }
+
+        if (! $names) {
+            return [];
+        }
+
+        $names = array_keys($names);
+
+        $products = Product::whereIn('name', $names)->get(['id', 'name']);
+        if ($products->isEmpty()) {
+            return [];
+        }
+
+        $maps = WpProductMap::with('items')
+            ->whereIn('wp_product_id', $products->pluck('id')->map(fn ($id) => (string) $id)->all())
+            ->get()
+            ->keyBy('wp_product_id');
+
+        $resolved = [];
+        foreach ($names as $name) {
+            $candidates = [];
+
+            foreach ($products->where('name', $name) as $product) {
+                /** @var WpProductMap|null $map */
+                $map = $maps->get((string) $product->id);
+
+                if (! $map || $map->skip_stock || $map->items->isEmpty()) {
+                    continue;
+                }
+
+                $components = [];
+                foreach ($map->items as $component) {
+                    $components[(int) $component->inventory_item_id] = (int) $component->qty;
+                }
+                ksort($components);
+                $candidates[json_encode($components)] = $components;
+            }
+
+            // One agreed answer, or nothing - never a guess between two.
+            if (count($candidates) === 1) {
+                $resolved[$name] = reset($candidates);
+            }
+        }
+
+        return $resolved;
     }
 
     /**
