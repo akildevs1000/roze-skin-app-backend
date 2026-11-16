@@ -204,23 +204,49 @@ class InvoiceController extends Controller
             }
 
             DB::commit();
-
-            return $this->handleEMXOrder($request->order_id, $request->box_dimension);
-
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Invoice stored successfully.',
-                'data'    => $invoice,
-            ], 200);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
+
+            /* This used to fail silently: the catch returned the message to
+               the browser and wrote nothing anywhere, so "An error occurred
+               while storing the invoice" was all anyone ever had to go on and
+               there was no way to find out why afterwards. */
+            Log::error('Invoice store failed for order ' . ($validated['order_id'] ?? '?') . ': ' . $e->getMessage(), [
+                'exception' => get_class($e),
+                'file'      => $e->getFile() . ':' . $e->getLine(),
+            ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while storing the invoice.',
                 'error'   => $e->getMessage(),
             ], 500);
+        }
+
+        /* Everything past this point is after the invoice is saved: booking
+           the EMX shipment, printing the label, notifying the customer.
+
+           It is deliberately outside the transaction and outside that catch.
+           Before, a failure here ran DB::rollBack() on an already-committed
+           transaction - which does nothing - and then told the user the
+           invoice had not been stored, when in fact it had. Staff then tried
+           again and got a second shipment, or gave up on an invoice that
+           existed. A courier or mail problem is not a reason to disown a
+           financial record that is already written. */
+        try {
+            return $this->handleEMXOrder($request->order_id, $request->box_dimension);
+        } catch (\Throwable $e) {
+            Log::error("Invoice #{$invoice->id}: saved, but the shipping step failed - " . $e->getMessage(), [
+                'exception' => get_class($e),
+                'file'      => $e->getFile() . ':' . $e->getLine(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'label'   => false,
+                'message' => 'Invoice saved. The shipping label could not be created - ' . $e->getMessage(),
+                'data'    => $invoice,
+            ], 200);
         }
     }
 
@@ -642,16 +668,34 @@ class InvoiceController extends Controller
 
         $messageData = (new OrderController)->prepareMessage($templates, $customer, $order);
 
-        if (!empty($messageData['email'])) {
-            $emailPayload = [
-                'recipient' => $customer->email,
-                'text'      => $messageData['email'], // Message Body
-                'subject'   => "Order Dispatched",
-            ];
-
-            SendEmail::dispatch($emailPayload);
-
-            Log::channel('order_emx')->info('EMX API Email Dispatch Request', $emailPayload);
+        if (empty($messageData['email'])) {
+            return;
         }
+
+        $recipient = trim((string) optional($customer)->email);
+
+        /* Addresses get typed in by hand and arrive with stray spaces -
+           "rekha.Nirbhay @gmail.com" is a real one from this shop's data.
+           Gmail answers 553 and the mailer throws, which used to take the
+           whole convert-to-invoice down with it. An address nobody can send
+           to is a customer-record problem, not a reason to refuse to invoice
+           the order, so it is logged and skipped. */
+        if ($recipient === '' || ! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+            Log::channel('order_emx')->warning('Dispatch email skipped - address is not usable', [
+                'order_id' => optional($order)->order_id,
+                'recipient' => $recipient,
+            ]);
+            return;
+        }
+
+        $emailPayload = [
+            'recipient' => $recipient,
+            'text'      => $messageData['email'], // Message Body
+            'subject'   => "Order Dispatched",
+        ];
+
+        SendEmail::dispatch($emailPayload);
+
+        Log::channel('order_emx')->info('EMX API Email Dispatch Request', $emailPayload);
     }
 }
