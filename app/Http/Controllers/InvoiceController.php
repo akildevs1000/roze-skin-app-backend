@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Template;
+use App\Services\BundleContentsService;
 use App\Services\StockSyncService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -644,6 +645,15 @@ class InvoiceController extends Controller
             'special_notes' => $order->special_instructions ?? "Fragile handle with care",
             'service_type' => 'None',
             'items' => $order->items,
+
+            /*
+             * What each fixed bundle holds - Glow Routine, Combo Pack and the
+             * rest. The label already listed the contents of an Any 3 / Any 4
+             * from the order line's bundle_note, but a fixed bundle carries no
+             * note, so it printed as one line and the packer had no way of
+             * knowing what went in the box.
+             */
+            'bundle_contents' => app(BundleContentsService::class)->all(),
         ];
 
         $pdf = Pdf::loadView('pdf.awb', compact('data'))->setPaper('A4', 'portrait');

@@ -219,6 +219,16 @@
                             $decoded = json_decode($item['bundle_note'], true);
                             $bundleGroups = is_array($decoded) ? $decoded : null;
                         }
+
+                        // A fixed bundle - Glow Routine, Combo Pack, Trio Pack
+                        // and the rest - holds the same things every time, so
+                        // nothing is written against the order and there is no
+                        // note to read. Its contents come from the stock
+                        // mapping instead, keyed on the product id.
+                        if (!$bundleGroups && empty($item['bundle_note'])) {
+                            $pid = isset($item['product_id']) ? (string) $item['product_id'] : '';
+                            $bundleGroups = $data['bundle_contents'][$pid] ?? null;
+                        }
                     @endphp
                     @if ($bundleGroups)
                         @foreach ($bundleGroups as $g)
