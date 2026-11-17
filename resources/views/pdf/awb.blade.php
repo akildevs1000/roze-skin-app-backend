@@ -232,9 +232,17 @@
                     @endphp
                     @if ($bundleGroups)
                         @foreach ($bundleGroups as $g)
+                        @php
+                            // Per BUNDLE, so two bundles means two of each
+                            // component. The packer reads this column to count
+                            // what goes in the box, and it used to show one.
+                            $lineQty = (int) ($item['quantity'] ?? 1) ?: 1;
+                            $each = $g['qty'] ?? '';
+                            $each = $each === '' ? '' : (int) $each * $lineQty;
+                        @endphp
                         <tr>
                             <td style="padding: 6px 4px;">{{ $g['name'] ?? '' }}</td>
-                            <td style="text-align: right; padding: 6px 4px;">{{ $g['qty'] ?? '' }}</td>
+                            <td style="text-align: right; padding: 6px 4px;">{{ $each }}</td>
                         </tr>
                         @endforeach
                     @elseif (!empty($item['bundle_note']))
